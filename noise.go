@@ -118,6 +118,42 @@ func IntN(seed uint32, n, x uint64) int {
 	return int(hash % uint64(n))
 }
 
+// Int32N returns a deterministic int32 in [0, n) based on x
+func Int32N(seed uint32, n int32, x uint64) int32 {
+	if n <= 0 {
+		panic("invalid argument to Int32N")
+	}
+	hash := xxhash64(x, uint64(seed))
+	return int32(hash % uint64(n))
+}
+
+// Int64N returns a deterministic int64 in [0, n) based on x
+func Int64N(seed uint32, n int64, x uint64) int64 {
+	if n <= 0 {
+		panic("invalid argument to Int64N")
+	}
+	hash := xxhash64(x, uint64(seed))
+	return int64(hash % uint64(n))
+}
+
+// Uint32N returns a deterministic uint32 in [0, n) based on x
+func Uint32N(seed uint32, n uint32, x uint64) uint32 {
+	if n == 0 {
+		panic("invalid argument to Uint32N")
+	}
+	hash := xxhash64(x, uint64(seed))
+	return uint32(hash % uint64(n))
+}
+
+// Uint64N returns a deterministic uint64 in [0, n) based on x
+func Uint64N(seed uint32, n uint64, x uint64) uint64 {
+	if n == 0 {
+		panic("invalid argument to Uint64N")
+	}
+	hash := xxhash64(x, uint64(seed))
+	return hash % n
+}
+
 // Int32 returns a deterministic int32 based on x
 func Int32(seed uint32, x uint64) int32 {
 	hash := xxhash64(x, uint64(seed))
@@ -134,6 +170,64 @@ func Int64(seed uint32, x uint64) int64 {
 func Uint(seed uint32, x uint64) uint {
 	hash := xxhash64(x, uint64(seed))
 	return uint(hash)
+}
+
+// IntIn returns a deterministic int in [a, b] (inclusive) based on x
+func IntIn(seed uint32, a, b int, x uint64) int {
+	if a > b {
+		panic("invalid range: a > b")
+	}
+	return IntN(seed, uint64(b-a+1), x) + a
+}
+
+// UintIn returns a deterministic uint in [a, b] (inclusive) based on x
+func UintIn(seed uint32, a, b uint, x uint64) uint {
+	if a > b {
+		panic("invalid range: a > b")
+	}
+	return UintN(seed, uint64(b-a+1), x) + a
+}
+
+// Uint32In returns a deterministic uint32 in [a, b] (inclusive) based on x
+func Uint32In(seed uint32, a, b uint32, x uint64) uint32 {
+	if a > b {
+		panic("invalid range: a > b")
+	}
+	return Uint32N(seed, b-a+1, x) + a
+}
+
+// Uint64In returns a deterministic uint64 in [a, b] (inclusive) based on x
+func Uint64In(seed uint32, a, b uint64, x uint64) uint64 {
+	if a > b {
+		panic("invalid range: a > b")
+	}
+	return Uint64N(seed, b-a+1, x) + a
+}
+
+// Int32In returns a deterministic int32 in [a, b] (inclusive) based on x
+func Int32In(seed uint32, a, b int32, x uint64) int32 {
+	if a > b {
+		panic("invalid range: a > b")
+	}
+	return Int32N(seed, b-a+1, x) + a
+}
+
+// Int64In returns a deterministic int64 in [a, b] (inclusive) based on x
+func Int64In(seed uint32, a, b int64, x uint64) int64 {
+	if a > b {
+		panic("invalid range: a > b")
+	}
+	return Int64N(seed, b-a+1, x) + a
+}
+
+// Roll32 returns true if Float32(seed, x) < probability
+func Roll32(seed uint32, probability float32, x uint64) bool {
+	return Float32(seed, x) < probability
+}
+
+// Roll64 returns true if Float64(seed, x) < probability
+func Roll64(seed uint32, probability float64, x uint64) bool {
+	return Float64(seed, x) < probability
 }
 
 // UintN returns a deterministic uint in [0, n) based on x

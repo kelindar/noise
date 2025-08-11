@@ -123,6 +123,12 @@ func runBenchmarks(b *bench.B) {
 		{"Norm64", func(i int) {
 			_ = noise.Norm64(seed, uint64(i))
 		}},
+		{"IntIn", func(i int) {
+			_ = noise.IntIn(seed, 10, 50, uint64(i))
+		}},
+		{"Roll64", func(i int) {
+			_ = noise.Roll64(seed, 0.5, uint64(i))
+		}},
 	}
 
 	// Run all benchmarks
