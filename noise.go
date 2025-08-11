@@ -7,7 +7,7 @@ import (
 
 // Number constraint for generic noise functions
 type Number interface {
-	~float32 | ~float64 | ~uint16 | ~uint32 | ~uint64 | ~int16 | ~int32 | ~int64
+	~float32 | ~float64 | uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | int | ~int8 | ~int16 | ~int32 | ~int64
 }
 
 // ---------------------------------- White Noise ----------------------------------
@@ -31,12 +31,20 @@ func coordToUint64[T Number](coord T) uint64 {
 		return uint64(math.Float32bits(float32(coord)))
 	case float64:
 		return math.Float64bits(float64(coord))
+	case int:
+		return uint64(uint(coord))
+	case uint8:
+		return uint64(coord)
 	case uint16:
 		return uint64(coord)
 	case uint32:
 		return uint64(coord)
 	case uint64:
 		return uint64(coord)
+	case uint:
+		return uint64(coord)
+	case int8:
+		return uint64(uint8(coord))
 	case int16:
 		return uint64(uint16(coord))
 	case int32:

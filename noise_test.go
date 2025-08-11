@@ -248,6 +248,10 @@ func TestWhiteCoordinates(t *testing.T) {
 	vUint16 := White(seed, uint16(1))
 	vUint32 := White(seed, uint32(1))
 	vUint64 := White(seed, uint64(1))
+	vUint8 := White(seed, uint8(1))
+	vUint := White(seed, uint(1))
+	vInt8 := White(seed, int8(1))
+	vInt := White(seed, int(1))
 
 	// Test with 5+ coordinates to cover the default case in White
 	v5Plus := White(seed, 1.0, 2.0, 3.0, 4.0, 5.0)
@@ -262,6 +266,10 @@ func TestWhiteCoordinates(t *testing.T) {
 	assert.True(t, vUint16 >= -1 && vUint16 <= 1)
 	assert.True(t, vUint32 >= -1 && vUint32 <= 1)
 	assert.True(t, vUint64 >= -1 && vUint64 <= 1)
+	assert.True(t, vUint8 >= -1 && vUint8 <= 1)
+	assert.True(t, vUint >= -1 && vUint <= 1)
+	assert.True(t, vInt8 >= -1 && vInt8 <= 1)
+	assert.True(t, vInt >= -1 && vInt <= 1)
 }
 
 func TestPanicCases(t *testing.T) {
@@ -285,4 +293,5 @@ func TestPanicCases(t *testing.T) {
 	assert.Panics(t, func() { Int64In(seed, 10, 5, x) })
 	assert.Panics(t, func() { Uint32In(seed, 10, 5, x) })
 	assert.Panics(t, func() { Uint64In(seed, 10, 5, x) })
+	assert.Panics(t, func() { White[int](seed) })
 }
