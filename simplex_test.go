@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestVisualRegression(t *testing.T) {
+func TestSimplex(t *testing.T) {
 	s := NewSimplex(42)
 	f := NewFBM(42)
 

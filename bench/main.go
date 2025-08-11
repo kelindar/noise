@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"math"
 	"math/rand/v2"
 	"time"
 
@@ -10,83 +8,137 @@ import (
 	"github.com/kelindar/noise"
 )
 
-var sizes = []int{1e3, 1e6}
-
 func main() {
 	bench.Run(func(b *bench.B) {
-		runNoise(b)
-		runFBM(b)
+		runBenchmarks(b)
 	}, bench.WithDuration(10*time.Millisecond), bench.WithSamples(100))
 }
 
-func runNoise(b *bench.B) {
-	shapes := []struct {
-		name string
-		gen  func(int) [][2]float32
-	}{
-		{"seq", dataSeq},
-		{"rnd", dataRand},
-		{"circ", dataCircle},
-	}
-
+func runBenchmarks(b *bench.B) {
 	const size = 1000
+
+	// Initialize noise generators
 	s := noise.NewSimplex(0)
-	for _, shape := range shapes {
-		points := shape.gen(size)
-		name := fmt.Sprintf("simplex %s (%s)", formatSize(size), shape.name)
-		b.Run(name, func(i int) {
-			p := points[i%len(points)]
-			_ = s.Eval(p[0], p[1])
-		})
-	}
-}
-
-func runFBM(b *bench.B) {
-	shapes := []struct {
-		name string
-		gen  func(int) [][2]float32
-	}{
-		{"seq", dataSeq},
-		{"rnd", dataRand},
-		{"circ", dataCircle},
-	}
-
-	const size = 1000
 	fbm := noise.NewFBM(0)
+	const seed = uint32(42)
 
-	// Test different FBM configurations
-	configs := []struct {
-		name       string
-		octaves    int
-		lacunarity float32
-		gain       float32
+	// Generate test data
+	seq1D := dataSeq1D(size)
+	rnd1D := dataRand1D(size)
+	seq2D := dataSeq2D(size)
+	rnd2D := dataRand2D(size)
+	seq3D := dataSeq3D(size)
+	rnd3D := dataRand3D(size)
+
+	// Benchmark table
+	benchmarks := []struct {
+		name string
+		fn   func(int)
 	}{
-		{"basic", 4, 2.0, 0.5},
-		{"high", 6, 2.0, 0.5},
-		{"rough", 4, 2.0, 0.7},
-		{"smooth", 4, 2.0, 0.3},
+		// Simplex benchmarks
+		{"simplex 1D (seq)", func(i int) {
+			p := seq1D[i%len(seq1D)]
+			_ = s.Eval(p)
+		}},
+		{"simplex 1D (rnd)", func(i int) {
+			p := rnd1D[i%len(rnd1D)]
+			_ = s.Eval(p)
+		}},
+		{"simplex 2D (seq)", func(i int) {
+			p := seq2D[i%len(seq2D)]
+			_ = s.Eval(p[0], p[1])
+		}},
+		{"simplex 2D (rnd)", func(i int) {
+			p := rnd2D[i%len(rnd2D)]
+			_ = s.Eval(p[0], p[1])
+		}},
+		{"simplex 3D (seq)", func(i int) {
+			p := seq3D[i%len(seq3D)]
+			_ = s.Eval(p[0], p[1], p[2])
+		}},
+		{"simplex 3D (rnd)", func(i int) {
+			p := rnd3D[i%len(rnd3D)]
+			_ = s.Eval(p[0], p[1], p[2])
+		}},
+
+		// FBM benchmarks
+		{"fbm 1D (seq)", func(i int) {
+			p := seq1D[i%len(seq1D)]
+			_ = fbm.Eval(2.0, 0.5, 4, p)
+		}},
+		{"fbm 1D (rnd)", func(i int) {
+			p := rnd1D[i%len(rnd1D)]
+			_ = fbm.Eval(2.0, 0.5, 4, p)
+		}},
+		{"fbm 2D (seq)", func(i int) {
+			p := seq2D[i%len(seq2D)]
+			_ = fbm.Eval(2.0, 0.5, 4, p[0], p[1])
+		}},
+		{"fbm 2D (rnd)", func(i int) {
+			p := rnd2D[i%len(rnd2D)]
+			_ = fbm.Eval(2.0, 0.5, 4, p[0], p[1])
+		}},
+		{"fbm 3D (seq)", func(i int) {
+			p := seq3D[i%len(seq3D)]
+			_ = fbm.Eval(2.0, 0.5, 4, p[0], p[1], p[2])
+		}},
+		{"fbm 3D (rnd)", func(i int) {
+			p := rnd3D[i%len(rnd3D)]
+			_ = fbm.Eval(2.0, 0.5, 4, p[0], p[1], p[2])
+		}},
+
+		// White noise benchmarks
+		{"white 1D (seq)", func(i int) {
+			p := seq1D[i%len(seq1D)]
+			_ = noise.Float32(seed, p)
+		}},
+		{"white 1D (rnd)", func(i int) {
+			p := rnd1D[i%len(rnd1D)]
+			_ = noise.Float32(seed, p)
+		}},
+		{"white 2D (seq)", func(i int) {
+			p := seq2D[i%len(seq2D)]
+			_ = noise.Float32(seed, p[0], p[1])
+		}},
+		{"white 2D (rnd)", func(i int) {
+			p := rnd2D[i%len(rnd2D)]
+			_ = noise.Float32(seed, p[0], p[1])
+		}},
+		{"white 3D (seq)", func(i int) {
+			p := seq3D[i%len(seq3D)]
+			_ = noise.Float32(seed, p[0], p[1], p[2])
+		}},
+		{"white 3D (rnd)", func(i int) {
+			p := rnd3D[i%len(rnd3D)]
+			_ = noise.Float32(seed, p[0], p[1], p[2])
+		}},
 	}
 
-	for _, config := range configs {
-		for _, shape := range shapes {
-			points := shape.gen(size)
-			name := fmt.Sprintf("fbm-%s %s (%s)", config.name, formatSize(size), shape.name)
-			b.Run(name, func(i int) {
-				p := points[i%len(points)]
-				_ = fbm.Eval(config.lacunarity, config.gain, config.octaves, p[0], p[1])
-			})
-		}
+	// Run all benchmarks
+	for _, bm := range benchmarks {
+		b.Run(bm.name, bm.fn)
 	}
 }
 
-func formatSize(size int) string {
-	if size >= 1e6 {
-		return fmt.Sprintf("%.0fM", float64(size)/1e6)
+// 1D data generators
+func dataSeq1D(n int) []float32 {
+	pts := make([]float32, n)
+	for i := 0; i < n; i++ {
+		pts[i] = float32(i)
 	}
-	return fmt.Sprintf("%.0fK", float64(size)/1e3)
+	return pts
 }
 
-func dataSeq(n int) [][2]float32 {
+func dataRand1D(n int) []float32 {
+	pts := make([]float32, n)
+	for i := 0; i < n; i++ {
+		pts[i] = rand.Float32() * 1000
+	}
+	return pts
+}
+
+// 2D data generators
+func dataSeq2D(n int) [][2]float32 {
 	pts := make([][2]float32, n)
 	for i := 0; i < n; i++ {
 		f := float32(i)
@@ -95,19 +147,28 @@ func dataSeq(n int) [][2]float32 {
 	return pts
 }
 
-func dataRand(n int) [][2]float32 {
+func dataRand2D(n int) [][2]float32 {
 	pts := make([][2]float32, n)
 	for i := 0; i < n; i++ {
-		pts[i] = [2]float32{rand.Float32(), rand.Float32()}
+		pts[i] = [2]float32{rand.Float32() * 1000, rand.Float32() * 1000}
 	}
 	return pts
 }
 
-func dataCircle(n int) [][2]float32 {
-	pts := make([][2]float32, n)
+// 3D data generators
+func dataSeq3D(n int) [][3]float32 {
+	pts := make([][3]float32, n)
 	for i := 0; i < n; i++ {
-		angle := 2 * math.Pi * float64(i) / float64(n)
-		pts[i] = [2]float32{float32(math.Cos(angle)), float32(math.Sin(angle))}
+		f := float32(i)
+		pts[i] = [3]float32{f, f, f}
+	}
+	return pts
+}
+
+func dataRand3D(n int) [][3]float32 {
+	pts := make([][3]float32, n)
+	for i := 0; i < n; i++ {
+		pts[i] = [3]float32{rand.Float32() * 1000, rand.Float32() * 1000, rand.Float32() * 1000}
 	}
 	return pts
 }
