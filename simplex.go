@@ -1,6 +1,6 @@
 package noise
 
-import "math/rand"
+import "math/rand/v2"
 
 const (
 	f2 = 0.36602542 // float32(0.5 * (math.Sqrt(3) - 1))
@@ -8,24 +8,6 @@ const (
 	f3 = 1.0 / 3.0  // for 3D skewing
 	g3 = 1.0 / 6.0  // for 3D unskewing
 )
-
-var (
-	perm  [512]uint8
-	grad2 [512][2]float32
-	grad3 [512][3]float32
-)
-
-// Simplex represents a simplex noise generator with its own permutation table
-type Simplex struct {
-	perm  [512]uint8
-	grad2 [512][2]float32
-	grad3 [512][3]float32
-}
-
-// FBM represents a fractal Brownian motion generator
-type FBM struct {
-	simplex *Simplex
-}
 
 var table = [...]uint8{151, 160, 137, 91, 90, 15,
 	131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23,
@@ -39,133 +21,16 @@ var table = [...]uint8{151, 160, 137, 91, 90, 15,
 	129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
 	251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
 	49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254,
-	138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180}
-
-func init() {
-	var g2d = [12]uint16{
-		0x0101, // [+1, +1]
-		0xff01, // [-1, +1]
-		0x01ff, // [+1, -1]
-		0xffff, // [-1, -1]
-		0x0100, // [+1, +0]
-		0xff00, // [-1, +0]
-		0x0100, // [+1, +0]
-		0xff00, // [-1, +0]
-		0x0001, // [+0, +1]
-		0x00ff, // [+0, -1]
-		0x0001, // [+0, +1]
-		0x00ff, // [+0, -1]
-	}
-
-	for i := 0; i < 512; i++ {
-		perm[i] = table[i&255]
-		idx := g2d[perm[i]%12]
-		gx := int8(idx >> 8)
-		gy := int8(idx)
-		grad2[i] = [2]float32{float32(gx), float32(gy)}
-		// Initialize 3D gradients (12 unit vectors)
-		grad3[i] = [3]float32{float32(gx), float32(gy), 0}
-	}
+	138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
 }
 
-// Noise2 computes a two dimensional simplex noise
-// Public Domain: https://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
-// Reference: https://mrl.cs.nyu.edu/~perlin/noise/
-func Noise2(x, y float32, seed uint32) float32 {
+// ---------------------------------- Simplex Noise ----------------------------------
 
-	// Skew the input space to determine which simplex cell we're in
-	s := (x + y) * f2
-	i := floor(x + s)
-	j := floor(y + s)
-
-	// Unskew the cell origin back to (x,y) space
-	t := float32(i+j) * g2
-	x0 := x - (float32(i) - t)
-	y0 := y - (float32(j) - t)
-
-	// For the 2D case, the simplex shape is an equilateral triangle.
-	// Determine which simplex we are in
-	i1, j1 := float32(0), float32(1) // upper triangle
-	if x0 > y0 {                     // lower triangle
-		i1 = 1
-		j1 = 0
-	}
-
-	// Offsets for middle corner in (x,y) unskewed coords
-	x1 := x0 - i1 + g2
-	y1 := y0 - j1 + g2
-
-	// Offsets for middle corner in (x,y) unskewed coords
-	const g = 2*g2 - 1
-	x2 := x0 + g
-	y2 := y0 + g
-
-	// Work out the hashed gradient indices of the three simplex corners
-	si := int(seed) & 255
-	pp := perm[(j+si)&255:]
-	gg := grad2[(i+si)&255:]
-	p0 := int(pp[0])
-	p1 := int(pp[int(j1)])
-	p2 := int(pp[1])
-	g0 := gg[p0]
-	g1 := gg[int(i1)+p1]
-	g2 := gg[1+p2]
-
-	// Calculate the contribution from the three corners
-	n := float32(0.0)
-	if t := 0.5 - x0*x0 - y0*y0; t > 0 {
-		n += pow4(t) * (g0[0]*x0 + g0[1]*y0)
-	}
-	if t := 0.5 - x1*x1 - y1*y1; t > 0 {
-		n += pow4(t) * (g1[0]*x1 + g1[1]*y1)
-	}
-	if t := 0.5 - x2*x2 - y2*y2; t > 0 {
-		n += pow4(t) * (g2[0]*x2 + g2[1]*y2)
-	}
-
-	// Add contributions from each corner to get the final noise value.
-	// The result is scaled to return values in the interval [-1,1].
-	return 70.0 * n
-
-}
-
-// FBM2 computes fractal Brownian motion using multiple octaves of Noise2
-// The output is approximately in [-1,1].
-func FBM2(x, y float32, octaves int, lacunarity, gain float32, seed uint32) float32 {
-	if octaves <= 0 {
-		return 0
-	}
-	var sum float32
-	var amp float32 = 1
-	var freq float32 = 1
-	var totalAmp float32
-	for o := 0; o < octaves; o++ {
-		// decorrelate octaves by offsetting the seed
-		so := seed + uint32(o)*0x9E3779B1
-		sum += amp * Noise2(x*freq, y*freq, so)
-		totalAmp += amp
-		freq *= lacunarity
-		amp *= gain
-	}
-	if totalAmp > 0 {
-		return sum / totalAmp
-	}
-	return 0
-}
-
-// pow4 lifts the value to the power of 4
-func pow4(v float32) float32 {
-	v *= v
-	return v * v
-}
-
-// floor floors the floating-point value to an integer
-func floor(x float32) int {
-	v := int(x)
-	if x < float32(v) {
-		return v - 1
-	}
-	return v
+// Simplex represents a simplex noise generator with its own permutation table
+type Simplex struct {
+	perm  [512]uint8
+	grad2 [512][2]float32
+	grad3 [512][3]float32
 }
 
 // NewSimplex creates a new Simplex noise generator with the given seed
@@ -175,24 +40,17 @@ func NewSimplex(seed uint32) *Simplex {
 	return s
 }
 
-// NewFBM creates a new FBM generator with the given seed
-func NewFBM(seed uint32) *FBM {
-	return &FBM{
-		simplex: NewSimplex(seed),
-	}
-}
-
 // initWithSeed initializes the Simplex generator with a seeded permutation table
 func (s *Simplex) initWithSeed(seed uint32) {
 	// Create a seeded random number generator
-	rng := rand.New(rand.NewSource(int64(seed)))
+	rng := rand.New(rand.NewPCG(uint64(seed), 0))
 
 	// Initialize permutation table with Fisher-Yates shuffle
 	for i := 0; i < 256; i++ {
 		s.perm[i] = uint8(i)
 	}
 	for i := 255; i > 0; i-- {
-		j := rng.Intn(i + 1)
+		j := rng.IntN(i + 1)
 		s.perm[i], s.perm[j] = s.perm[j], s.perm[i]
 	}
 	// Duplicate for wrapping
@@ -236,6 +94,20 @@ func (s *Simplex) Eval(coords ...float32) float32 {
 		return s.noise3D(coords[0], coords[1], coords[2])
 	default:
 		panic("Eval requires 1, 2, or 3 coordinates")
+	}
+}
+
+// ---------------------------------- Fractal Brownian Motion ----------------------------------
+
+// FBM represents a fractal Brownian motion generator
+type FBM struct {
+	simplex *Simplex
+}
+
+// NewFBM creates a new FBM generator with the given seed
+func NewFBM(seed uint32) *FBM {
+	return &FBM{
+		simplex: NewSimplex(seed),
 	}
 }
 
@@ -435,4 +307,19 @@ func (s *Simplex) noise3D(x, y, z float32) float32 {
 	// Add contributions from each corner to get the final noise value.
 	// The result is scaled to stay just inside [-1,1]
 	return 32.0 * (n0 + n1 + n2 + n3)
+}
+
+// pow4 lifts the value to the power of 4
+func pow4(v float32) float32 {
+	v *= v
+	return v * v
+}
+
+// floor floors the floating-point value to an integer
+func floor(x float32) int {
+	v := int(x)
+	if x < float32(v) {
+		return v - 1
+	}
+	return v
 }
