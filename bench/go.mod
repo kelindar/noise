@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/kelindar/bench v0.2.0
-	github.com/kelindar/simplex v0.0.0
+	github.com/kelindar/noise v0.0.0
 )
 
 require (
@@ -12,4 +12,4 @@ require (
 	gonum.org/v1/gonum v0.8.2 // indirect
 )
 
-replace github.com/kelindar/simplex => ../
+replace github.com/kelindar/noise => ../
