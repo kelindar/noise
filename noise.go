@@ -85,26 +85,6 @@ func Float64(seed uint32, x uint64) float64 {
 	return float64(hash) / float64(1<<64)
 }
 
-// Uint32 returns a deterministic uint32 based on x
-func Uint32(seed uint32, x uint64) uint32 {
-	hash := xxhash64(x, uint64(seed))
-	return uint32(hash >> 32)
-}
-
-// Uint64 returns a deterministic uint64 based on x
-func Uint64(seed uint32, x uint64) uint64 {
-	return xxhash64(x, uint64(seed))
-}
-
-// IntN returns a deterministic int in [0, n) based on x
-func IntN(seed uint32, n int, x uint64) int {
-	if n <= 0 {
-		panic("invalid argument to IntN")
-	}
-	hash := xxhash64(x, uint64(seed))
-	return int(hash % uint64(n))
-}
-
 // Norm64 returns a deterministic normally distributed float64 based on x
 func Norm64(seed uint32, x uint64) float64 {
 	hash1 := xxhash64(x, uint64(seed))
@@ -123,14 +103,19 @@ func Norm32(seed uint32, x uint64) float32 {
 	return float32(Norm64(seed, x))
 }
 
-// UintN returns a deterministic uint in [0, n) based on x
-func UintN(seed uint32, n uint, x uint64) uint {
-	if n == 0 {
-		panic("invalid argument to UintN")
-	}
-
+// Int returns a deterministic int based on x
+func Int(seed uint32, x uint64) int {
 	hash := xxhash64(x, uint64(seed))
-	return uint(hash % uint64(n))
+	return int(hash)
+}
+
+// IntN returns a deterministic int in [0, n) based on x
+func IntN(seed uint32, n, x uint64) int {
+	if n <= 0 {
+		panic("invalid argument to IntN")
+	}
+	hash := xxhash64(x, uint64(seed))
+	return int(hash % uint64(n))
 }
 
 // Int32 returns a deterministic int32 based on x
@@ -145,14 +130,29 @@ func Int64(seed uint32, x uint64) int64 {
 	return int64(hash)
 }
 
-// Int returns a deterministic int based on x
-func Int(seed uint32, x uint64) int {
-	hash := xxhash64(x, uint64(seed))
-	return int(hash)
-}
-
 // Uint returns a deterministic uint based on x
 func Uint(seed uint32, x uint64) uint {
 	hash := xxhash64(x, uint64(seed))
 	return uint(hash)
+}
+
+// UintN returns a deterministic uint in [0, n) based on x
+func UintN(seed uint32, n, x uint64) uint {
+	if n == 0 {
+		panic("invalid argument to UintN")
+	}
+
+	hash := xxhash64(x, uint64(seed))
+	return uint(hash % uint64(n))
+}
+
+// Uint32 returns a deterministic uint32 based on x
+func Uint32(seed uint32, x uint64) uint32 {
+	hash := xxhash64(x, uint64(seed))
+	return uint32(hash >> 32)
+}
+
+// Uint64 returns a deterministic uint64 based on x
+func Uint64(seed uint32, x uint64) uint64 {
+	return xxhash64(x, uint64(seed))
 }
