@@ -1,1 +1,38 @@
-# noise
+<p align="center">
+<img width="300" height="100" src=".github/logo.png" border="0" alt="kelindar/noise">
+<br>
+
+<img src="https://img.shields.io/github/go-mod/go-version/kelindar/noise" alt="Go Version">
+<a href="https://pkg.go.dev/github.com/kelindar/noise"><img src="https://pkg.go.dev/badge/github.com/kelindar/noise" alt="PkgGoDev"></a>
+<a href="https://goreportcard.com/report/github.com/kelindar/noise"><img src="https://goreportcard.com/badge/github.com/kelindar/noise" alt="Go Report Card"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+<a href="https://coveralls.io/github/kelindar/noise"><img src="https://coveralls.io/repos/github/kelindar/noise/badge.svg" alt="Coverage"></a>
+</p>
+
+## noise Noise
+
+This respository contains an experimental implementation of [noise noise](https://weber.itn.liu.se/~stegu/noisenoise/noisenoise.pdf) based on the code from the public domain, found at [weber.itn.liu.se/~stegu/noisenoise](https://weber.itn.liu.se/~stegu/noisenoise/noiseNoise.java). Note that this is not the genuine implementation of [Ken Perlin's noise noise](https://mrl.cs.nyu.edu/~perlin/noise/) presented at SIGGRAPH 2002.
+
+<p align="center">
+<img width="800" height="800" src="examples/terrain.png" border="0" alt="kelindar/noise">
+</p>
+
+## Benchmarks
+
+```
+cpu: Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz
+name                 time/op      ops/s        allocs/op   
+-------------------- ------------ ------------ ------------
+noise 1K (seq)       12.6 ns      79.4M        0           
+noise 1K (rnd)       15.5 ns      64.5M        0           
+noise 1K (circ)      14.8 ns      67.8M        0           
+
+```
+
+## Contributing
+
+We are open to contributions, feel free to submit a pull request and we'll review it as quickly as we can. This library is maintained by [Roman Atachiants](https://www.linkedin.com/in/atachiants/)
+
+## License
+
+Tile is licensed under the [MIT License](LICENSE.md).
