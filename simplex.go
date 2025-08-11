@@ -281,11 +281,10 @@ func NewFBM(seed uint32) *FBM {
 // Eval evaluates fractal Brownian motion at the given coordinates
 // First 3 parameters are lacunarity, gain, octaves,  followed by 1-3 coordinates
 func (f *FBM) Eval(lacunarity, gain float32, octaves int, coords ...float32) float32 {
-	if len(coords) < 1 || len(coords) > 3 {
+	switch {
+	case len(coords) < 1 || len(coords) > 3:
 		panic("noise: fBM requires at least 1 and at most 3 coordinates")
-	}
-
-	if octaves <= 0 {
+	case octaves <= 0:
 		return 0
 	}
 
@@ -295,13 +294,17 @@ func (f *FBM) Eval(lacunarity, gain float32, octaves int, coords ...float32) flo
 	var totalAmp float32
 
 	for o := 0; o < octaves; o++ {
-		// Scale coordinates by frequency
-		scaledCoords := make([]float32, len(coords))
-		for i, coord := range coords {
-			scaledCoords[i] = coord * freq
+		var noise float32
+		switch len(coords) {
+		case 1:
+			noise = f.simplex.noise1D(coords[0] * freq)
+		case 2:
+			noise = f.simplex.noise2D(coords[0]*freq, coords[1]*freq)
+		case 3:
+			noise = f.simplex.noise3D(coords[0]*freq, coords[1]*freq, coords[2]*freq)
 		}
 
-		sum += amp * f.simplex.Eval(scaledCoords...)
+		sum += amp * noise
 		totalAmp += amp
 		freq *= lacunarity
 		amp *= gain

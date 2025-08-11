@@ -62,7 +62,7 @@ func runFBM(b *bench.B) {
 		gain       float32
 	}{
 		{"basic", 4, 2.0, 0.5},
-		{"detailed", 6, 2.0, 0.5},
+		{"high", 6, 2.0, 0.5},
 		{"rough", 4, 2.0, 0.7},
 		{"smooth", 4, 2.0, 0.3},
 	}
