@@ -18,78 +18,78 @@ func TestVisualRegression(t *testing.T) {
 	tests := []struct {
 		name     string
 		fixture  string
-		generate func() interface{}
-		compare  func(t *testing.T, expected, actual interface{}, name string)
+		generate func() any
+		compare  func(t *testing.T, expected, actual any, name string)
 	}{
 		{
 			name:    "FBM3D",
 			fixture: "fixtures/fbm3d.gif",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate3DNoiseGIF(50, 50, 10, 0.1, func(x, y, z float32) float32 {
 					return f.Eval(2.0, 0.5, 4, x, y, z)
 				})
 			},
-			compare: func(t *testing.T, expected, actual interface{}, name string) {
+			compare: func(t *testing.T, expected, actual any, name string) {
 				compareGIFs(t, expected.(*gif.GIF), actual.(*gif.GIF), name)
 			},
 		},
 		{
 			name:    "Simplex3D",
 			fixture: "fixtures/simplex3d.gif",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate3DNoiseGIF(50, 50, 10, 0.1, func(x, y, z float32) float32 {
 					return s.Eval(x, y, z)
 				})
 			},
-			compare: func(t *testing.T, expected, actual interface{}, name string) {
+			compare: func(t *testing.T, expected, actual any, name string) {
 				compareGIFs(t, expected.(*gif.GIF), actual.(*gif.GIF), name)
 			},
 		},
 		{
 			name:    "Simplex2D",
 			fixture: "fixtures/simplex2d.png",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate2DNoiseImage(100, 100, 0.05, func(x, y float32) float32 {
 					return s.Eval(x, y)
 				})
 			},
-			compare: func(t *testing.T, expected, actual interface{}, name string) {
+			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
 			},
 		},
 		{
 			name:    "FBM2D",
 			fixture: "fixtures/fbm2d.png",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate2DNoiseImage(100, 100, 0.05, func(x, y float32) float32 {
 					return f.Eval(2.0, 0.5, 4, x, y)
 				})
 			},
-			compare: func(t *testing.T, expected, actual interface{}, name string) {
+			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
 			},
 		},
 		{
 			name:    "Simplex1D",
 			fixture: "fixtures/simplex1d.png",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate1DNoiseImage(400, 100, 0.02, func(x float32) float32 {
 					return s.Eval(x)
 				})
 			},
-			compare: func(t *testing.T, expected, actual interface{}, name string) {
+			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
 			},
 		},
 		{
 			name:    "FBM1D",
 			fixture: "fixtures/fbm1d.png",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate1DNoiseImage(400, 100, 0.02, func(x float32) float32 {
 					return f.Eval(2.0, 0.5, 4, x)
 				})
 			},
-			compare: func(t *testing.T, expected, actual interface{}, name string) {
+			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
 			},
 		},
@@ -105,7 +105,7 @@ func TestVisualRegression(t *testing.T) {
 			assert.NoError(t, err)
 			defer refFile.Close()
 
-			var expected interface{}
+			var expected any
 			if tt.name == "Simplex3D" || tt.name == "FBM3D" {
 				expected, err = gif.DecodeAll(refFile)
 			} else {
