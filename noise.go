@@ -48,8 +48,8 @@ func coordToUint64[T Number](coord T) uint64 {
 	}
 }
 
-// hashCoords combines multiple coordinates into a single hash (no allocations)
-func hashCoords[T Number](seed uint32, coords ...T) uint64 {
+// White generates deterministic white noise in [-1, 1] range based on coordinates
+func White[T Number](seed uint32, coords ...T) float32 {
 	if len(coords) == 0 {
 		panic("noise: requires at least 1 coordinate")
 	}
@@ -64,49 +64,47 @@ func hashCoords[T Number](seed uint32, coords ...T) uint64 {
 		hash = xxhash64(coordBits, hash+uint64(i)*0x9e3779b97f4a7c15)
 	}
 
-	return hash
+	return float32(hash>>32)/float32(1<<31) - 1.0
 }
 
-// Float32 returns a deterministic float32 in [0.0, 1.0) based on coordinates
-func Float32[T Number](seed uint32, coords ...T) float32 {
-	hash := hashCoords(seed, coords...)
-	// Use upper 32 bits and convert to [0, 1) range
+// ---------------------------------- Random ----------------------------------
+
+// Float32 returns a deterministic float32 in [0.0, 1.0) based on x
+func Float32(seed uint32, x uint64) float32 {
+	hash := xxhash64(x, uint64(seed))
 	return float32(hash>>32) / float32(1<<32)
 }
 
-// Float64 returns a deterministic float64 in [0.0, 1.0) based on coordinates
-func Float64[T Number](seed uint32, coords ...T) float64 {
-	hash := hashCoords(seed, coords...)
-	// Use full 64 bits and convert to [0, 1) range
+// Float64 returns a deterministic float64 in [0.0, 1.0) based on x
+func Float64(seed uint32, x uint64) float64 {
+	hash := xxhash64(x, uint64(seed))
 	return float64(hash) / float64(1<<64)
 }
 
-// Uint32 returns a deterministic uint32 based on coordinates
-func Uint32[T Number](seed uint32, coords ...T) uint32 {
-	hash := hashCoords(seed, coords...)
+// Uint32 returns a deterministic uint32 based on x
+func Uint32(seed uint32, x uint64) uint32 {
+	hash := xxhash64(x, uint64(seed))
 	return uint32(hash >> 32)
 }
 
-// Uint64 returns a deterministic uint64 based on coordinates
-func Uint64[T Number](seed uint32, coords ...T) uint64 {
-	return hashCoords(seed, coords...)
+// Uint64 returns a deterministic uint64 based on x
+func Uint64(seed uint32, x uint64) uint64 {
+	return xxhash64(x, uint64(seed))
 }
 
-// IntN returns a deterministic int in [0, n) based on coordinates
-func IntN[T Number](seed uint32, n int, coords ...T) int {
+// IntN returns a deterministic int in [0, n) based on x
+func IntN(seed uint32, n int, x uint64) int {
 	if n <= 0 {
 		panic("invalid argument to IntN")
 	}
-	hash := hashCoords(seed, coords...)
+	hash := xxhash64(x, uint64(seed))
 	return int(hash % uint64(n))
 }
 
-// Norm64 returns a deterministic normally distributed float64 based on coordinates
-func Norm64[T Number](seed uint32, coords ...T) float64 {
-	// Use Box-Muller transform with two hash values
-	hash1 := hashCoords(seed, coords...)
-	// Generate second hash by adding offset
-	hash2 := xxhash64(hash1, uint64(seed)+0x9e3779b97f4a7c15)
+// Norm64 returns a deterministic normally distributed float64 based on x
+func Norm64(seed uint32, x uint64) float64 {
+	hash1 := xxhash64(x, uint64(seed))
+	hash2 := xxhash64(x, uint64(seed)+0x9e3779b97f4a7c15)
 
 	// Convert to [0,1) range
 	u1 := float64(hash1) / float64(1<<64)
@@ -116,45 +114,41 @@ func Norm64[T Number](seed uint32, coords ...T) float64 {
 	return math.Sqrt(-2*math.Log(u1)) * math.Cos(2*math.Pi*u2)
 }
 
-// Norm32 returns a deterministic normally distributed float32 based on coordinates
-func Norm32[T Number](seed uint32, coords ...T) float32 {
-	return float32(Norm64(seed, coords...))
+// Norm32 returns a deterministic normally distributed float32 based on x
+func Norm32(seed uint32, x uint64) float32 {
+	return float32(Norm64(seed, x))
 }
 
-// UintN returns a deterministic uint in [0, n) based on coordinates
-func UintN[T Number](seed uint32, n uint, coords ...T) uint {
+// UintN returns a deterministic uint in [0, n) based on x
+func UintN(seed uint32, n uint, x uint64) uint {
 	if n == 0 {
 		panic("invalid argument to UintN")
 	}
-	hash := hashCoords(seed, coords...)
+
+	hash := xxhash64(x, uint64(seed))
 	return uint(hash % uint64(n))
 }
 
-// Int32 returns a deterministic int32 based on coordinates
-func Int32[T Number](seed uint32, coords ...T) int32 {
-	hash := hashCoords(seed, coords...)
+// Int32 returns a deterministic int32 based on x
+func Int32(seed uint32, x uint64) int32 {
+	hash := xxhash64(x, uint64(seed))
 	return int32(hash >> 32)
 }
 
-// Int64 returns a deterministic int64 based on coordinates
-func Int64[T Number](seed uint32, coords ...T) int64 {
-	hash := hashCoords(seed, coords...)
+// Int64 returns a deterministic int64 based on x
+func Int64(seed uint32, x uint64) int64 {
+	hash := xxhash64(x, uint64(seed))
 	return int64(hash)
 }
 
-// Int returns a deterministic int based on coordinates
-func Int[T Number](seed uint32, coords ...T) int {
-	hash := hashCoords(seed, coords...)
+// Int returns a deterministic int based on x
+func Int(seed uint32, x uint64) int {
+	hash := xxhash64(x, uint64(seed))
 	return int(hash)
 }
 
-// Uint returns a deterministic uint based on coordinates
-func Uint[T Number](seed uint32, coords ...T) uint {
-	hash := hashCoords(seed, coords...)
+// Uint returns a deterministic uint based on x
+func Uint(seed uint32, x uint64) uint {
+	hash := xxhash64(x, uint64(seed))
 	return uint(hash)
-}
-
-// White generates deterministic white noise in [-1, 1] range (for compatibility)
-func White[T Number](seed uint32, coords ...T) float32 {
-	return Float32(seed, coords...)*2 - 1
 }

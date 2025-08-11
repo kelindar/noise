@@ -87,30 +87,30 @@ func runBenchmarks(b *bench.B) {
 			_ = fbm.Eval(2.0, 0.5, 4, p[0], p[1], p[2])
 		}},
 
-		// White noise benchmarks
+		// White noise benchmarks (using White function with coordinates)
 		{"white 1D (seq)", func(i int) {
 			p := seq1D[i%len(seq1D)]
-			_ = noise.Float32(seed, p)
+			_ = noise.White(seed, p)
 		}},
 		{"white 1D (rnd)", func(i int) {
 			p := rnd1D[i%len(rnd1D)]
-			_ = noise.Float32(seed, p)
+			_ = noise.White(seed, p)
 		}},
 		{"white 2D (seq)", func(i int) {
 			p := seq2D[i%len(seq2D)]
-			_ = noise.Float32(seed, p[0], p[1])
+			_ = noise.White(seed, p[0], p[1])
 		}},
 		{"white 2D (rnd)", func(i int) {
 			p := rnd2D[i%len(rnd2D)]
-			_ = noise.Float32(seed, p[0], p[1])
+			_ = noise.White(seed, p[0], p[1])
 		}},
 		{"white 3D (seq)", func(i int) {
 			p := seq3D[i%len(seq3D)]
-			_ = noise.Float32(seed, p[0], p[1], p[2])
+			_ = noise.White(seed, p[0], p[1], p[2])
 		}},
 		{"white 3D (rnd)", func(i int) {
 			p := rnd3D[i%len(rnd3D)]
-			_ = noise.Float32(seed, p[0], p[1], p[2])
+			_ = noise.White(seed, p[0], p[1], p[2])
 		}},
 	}
 

@@ -33,99 +33,99 @@ func TestWhite_Functions(t *testing.T) {
 
 	// Test Float32 returns values in [0,1)
 	for i := 0; i < 100; i++ {
-		v := Float32(seed, float32(i))
-		assert.True(t, v >= 0 && v < 1, "WhiteFloat32 should be in [0,1), got %f", v)
+		v := Float32(seed, uint64(i))
+		assert.True(t, v >= 0 && v < 1, "Float32 should be in [0,1), got %f", v)
 	}
 
 	// Test Float64 returns values in [0,1)
 	for i := 0; i < 100; i++ {
-		v := Float64(seed, float32(i))
-		assert.True(t, v >= 0 && v < 1, "WhiteFloat64 should be in [0,1), got %f", v)
+		v := Float64(seed, uint64(i))
+		assert.True(t, v >= 0 && v < 1, "Float64 should be in [0,1), got %f", v)
 	}
 
 	// Test IntN returns values in [0,n)
 	for i := 0; i < 100; i++ {
-		v := IntN(seed, 10, float32(i))
-		assert.True(t, v >= 0 && v < 10, "WhiteIntN should be in [0,10), got %d", v)
+		v := IntN(seed, 10, uint64(i))
+		assert.True(t, v >= 0 && v < 10, "IntN should be in [0,10), got %d", v)
 	}
 
 	// Test deterministic behavior
-	v1 := Float32(seed, 1.5, 2.5)
-	v2 := Float32(seed, 1.5, 2.5)
+	v1 := Float32(seed, 12345)
+	v2 := Float32(seed, 12345)
 	assert.Equal(t, v1, v2, "White functions should be deterministic")
 
-	// Test that different coordinates give different values
-	v3 := Float32(seed, 3.5, 4.5)
-	assert.NotEqual(t, v1, v3, "Different coordinates should give different values")
+	// Test that different x values give different results
+	v3 := Float32(seed, 54321)
+	assert.NotEqual(t, v1, v3, "Different x values should give different results")
 
 	// Test normal distribution (basic sanity check)
-	norm64 := Norm64(seed, 1.0, 2.0)
+	norm64 := Norm64(seed, 12345)
 	assert.True(t, norm64 >= -5 && norm64 <= 5, "Norm64 should be reasonable, got %f", norm64)
 
-	norm32 := Norm32(seed, 1.0, 2.0)
+	norm32 := Norm32(seed, 12345)
 	assert.True(t, norm32 >= -5 && norm32 <= 5, "Norm32 should be reasonable, got %f", norm32)
 
 	// Test UintN returns values in [0,n)
 	for i := 0; i < 100; i++ {
-		v := UintN(seed, 50, float32(i))
+		v := UintN(seed, 50, uint64(i))
 		assert.True(t, v < 50, "UintN should be in [0,50), got %d", v)
 	}
 
 	// Test Int32, Int64, Int, Uint
-	i32 := Int32(seed, 1.0)
-	i64 := Int64(seed, 1.0)
-	i := Int(seed, 1.0)
-	u := Uint(seed, 1.0)
+	i32 := Int32(seed, 12345)
+	i64 := Int64(seed, 12345)
+	i := Int(seed, 12345)
+	u := Uint(seed, 12345)
 
 	// Basic sanity checks (just ensure they don't panic and return different values)
-	assert.NotEqual(t, Int32(seed, 2.0), i32, "Different coordinates should give different Int32")
-	assert.NotEqual(t, Int64(seed, 2.0), i64, "Different coordinates should give different Int64")
-	assert.NotEqual(t, Int(seed, 2.0), i, "Different coordinates should give different Int")
-	assert.NotEqual(t, Uint(seed, 2.0), u, "Different coordinates should give different Uint")
+	assert.NotEqual(t, Int32(seed, 54321), i32, "Different x should give different Int32")
+	assert.NotEqual(t, Int64(seed, 54321), i64, "Different x should give different Int64")
+	assert.NotEqual(t, Int(seed, 54321), i, "Different x should give different Int")
+	assert.NotEqual(t, Uint(seed, 54321), u, "Different x should give different Uint")
 }
 
 func BenchmarkWhite(b *testing.B) {
 	const seed = uint32(42)
 
-	b.Run("Float32-1D", func(b *testing.B) {
+	b.Run("Float32", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Float32(seed, float32(i))
+			Float32(seed, uint64(i))
 		}
 	})
 
-	b.Run("Float32-2D", func(b *testing.B) {
+	b.Run("Float64", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Float32(seed, float32(i), float32(i+1))
+			Float64(seed, uint64(i))
 		}
 	})
 
-	b.Run("Float32-3D", func(b *testing.B) {
+	b.Run("IntN", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Float32(seed, float32(i), float32(i+1), float32(i+2))
+			IntN(seed, 100, uint64(i))
 		}
 	})
 
-	b.Run("IntN-1D", func(b *testing.B) {
+	b.Run("Uint64", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			IntN(seed, 100, float32(i))
+			Uint64(seed, uint64(i))
 		}
 	})
 
-	b.Run("Uint64-2D", func(b *testing.B) {
+	b.Run("Norm32", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Uint64(seed, float32(i), float32(i+1))
+			Norm32(seed, uint64(i))
 		}
 	})
 
-	b.Run("Norm32-1D", func(b *testing.B) {
+	b.Run("Int32", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Norm32(seed, float32(i))
+			Int32(seed, uint64(i))
 		}
 	})
 
-	b.Run("Int32-2D", func(b *testing.B) {
+	b.Run("UintN", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Int32(seed, float32(i), float32(i+1))
+			UintN(seed, 50, uint64(i))
 		}
 	})
 }
