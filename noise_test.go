@@ -84,52 +84,6 @@ func TestWhite_Functions(t *testing.T) {
 	assert.NotEqual(t, Uint(seed, 54321), u, "Different x should give different Uint")
 }
 
-func BenchmarkWhite(b *testing.B) {
-	const seed = uint32(42)
-
-	b.Run("Float32", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Float32(seed, uint64(i))
-		}
-	})
-
-	b.Run("Float64", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Float64(seed, uint64(i))
-		}
-	})
-
-	b.Run("IntN", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			IntN(seed, 100, uint64(i))
-		}
-	})
-
-	b.Run("Uint64", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Uint64(seed, uint64(i))
-		}
-	})
-
-	b.Run("Norm32", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Norm32(seed, uint64(i))
-		}
-	})
-
-	b.Run("Int32", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Int32(seed, uint64(i))
-		}
-	})
-
-	b.Run("UintN", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			UintN(seed, 50, uint64(i))
-		}
-	})
-}
-
 func TestWhiteVisualRegression(t *testing.T) {
 	const seed = uint32(42)
 

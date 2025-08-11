@@ -50,18 +50,22 @@ func coordToUint64[T Number](coord T) uint64 {
 
 // White generates deterministic white noise in [-1, 1] range based on coordinates
 func White[T Number](seed uint32, coords ...T) float32 {
-	if len(coords) == 0 {
-		panic("noise: requires at least 1 coordinate")
-	}
+	const mix uint64 = 0x9e3779b97f4a7c15
 
-	// Start with seed
 	hash := uint64(seed)
-
-	// Combine coordinates using xxhash64
-	for i, coord := range coords {
-		coordBits := coordToUint64(coord)
-		// Mix in coordinate index to ensure different positions for same values
-		hash = xxhash64(coordBits, hash+uint64(i)*0x9e3779b97f4a7c15)
+	switch len(coords) {
+	case 0:
+		panic("noise: requires at least 1 coordinate")
+	case 1:
+		hash = xxhash64(coordToUint64(coords[0]), hash)
+	case 2:
+		hash = xxhash64(coordToUint64(coords[0]), hash)
+		hash = xxhash64(coordToUint64(coords[1]), hash+mix)
+	default:
+		for i, coord := range coords {
+			coordBits := coordToUint64(coord)
+			hash = xxhash64(coordBits, hash+uint64(i)*mix)
+		}
 	}
 
 	return float32(hash>>32)/float32(1<<31) - 1.0

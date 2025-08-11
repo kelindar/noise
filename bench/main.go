@@ -112,6 +112,17 @@ func runBenchmarks(b *bench.B) {
 			p := rnd3D[i%len(rnd3D)]
 			_ = noise.White(seed, p[0], p[1], p[2])
 		}},
+
+		// Random function benchmarks (using uint64 parameter)
+		{"Float64", func(i int) {
+			_ = noise.Float64(seed, uint64(i))
+		}},
+		{"IntN", func(i int) {
+			_ = noise.IntN(seed, 100, uint64(i))
+		}},
+		{"Norm64", func(i int) {
+			_ = noise.Norm64(seed, uint64(i))
+		}},
 	}
 
 	// Run all benchmarks
