@@ -57,7 +57,7 @@ func runFBM(b *bench.B) {
 	// Test different FBM configurations
 	configs := []struct {
 		name       string
-		octaves    float32
+		octaves    int
 		lacunarity float32
 		gain       float32
 	}{
@@ -73,7 +73,7 @@ func runFBM(b *bench.B) {
 			name := fmt.Sprintf("fbm-%s %s (%s)", config.name, formatSize(size), shape.name)
 			b.Run(name, func(i int) {
 				p := points[i%len(points)]
-				_ = fbm.Eval(config.octaves, config.lacunarity, config.gain, p[0], p[1])
+				_ = fbm.Eval(config.lacunarity, config.gain, config.octaves, p[0], p[1])
 			})
 		}
 	}

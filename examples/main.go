@@ -33,11 +33,11 @@ var palette = []color.RGBA{
 func main() {
 	n := 800
 	img := image.NewRGBA(image.Rect(0, 0, n, n))
-	f := noise.NewFBM(42) // Use seed 42 for consistent results
+	f := noise.NewFBM(42)
 	for x := 0; x < n; x++ {
 		for y := 0; y < n; y++ {
 			// Generate FBM noise directly
-			noise := f.Eval(octaves, lacunarity, gain, frequency*float32(x), frequency*float32(y))
+			noise := f.Eval(lacunarity, gain, octaves, frequency*float32(x), frequency*float32(y))
 			v := (1 + noise) / 2 // Normalize to [0,1]
 
 			// Circular distance from the center point

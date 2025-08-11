@@ -35,22 +35,15 @@ type Simplex struct {
 
 // NewSimplex creates a new Simplex noise generator with the given seed
 func NewSimplex(seed uint32) *Simplex {
-	s := &Simplex{}
-	s.initWithSeed(seed)
-	return s
-}
-
-// initWithSeed initializes the Simplex generator with a seeded permutation table
-func (s *Simplex) initWithSeed(seed uint32) {
-	// Create a seeded random number generator
-	rng := rand.New(rand.NewPCG(uint64(seed), 0))
+	s := new(Simplex)
+	r := rand.New(rand.NewPCG(uint64(seed), 0))
 
 	// Initialize permutation table with Fisher-Yates shuffle
 	for i := 0; i < 256; i++ {
 		s.perm[i] = uint8(i)
 	}
 	for i := 255; i > 0; i-- {
-		j := rng.IntN(i + 1)
+		j := r.IntN(i + 1)
 		s.perm[i], s.perm[j] = s.perm[j], s.perm[i]
 	}
 	// Duplicate for wrapping
@@ -80,6 +73,7 @@ func (s *Simplex) initWithSeed(seed uint32) {
 		idx3 := s.perm[i&255] % 12
 		s.grad3[i] = g3d[idx3]
 	}
+	return s
 }
 
 // Eval evaluates simplex noise at the given coordinates
@@ -93,62 +87,8 @@ func (s *Simplex) Eval(coords ...float32) float32 {
 	case 3:
 		return s.noise3D(coords[0], coords[1], coords[2])
 	default:
-		panic("Eval requires 1, 2, or 3 coordinates")
+		panic("noise: simplex requires 1, 2, or 3 coordinates")
 	}
-}
-
-// ---------------------------------- Fractal Brownian Motion ----------------------------------
-
-// FBM represents a fractal Brownian motion generator
-type FBM struct {
-	simplex *Simplex
-}
-
-// NewFBM creates a new FBM generator with the given seed
-func NewFBM(seed uint32) *FBM {
-	return &FBM{
-		simplex: NewSimplex(seed),
-	}
-}
-
-// Eval evaluates fractal Brownian motion at the given coordinates
-// First 3 parameters are octaves, lacunarity, gain, followed by 1-3 coordinates
-func (f *FBM) Eval(params ...float32) float32 {
-	if len(params) < 4 {
-		panic("FBM.Eval requires at least 4 parameters: octaves, lacunarity, gain, and 1-3 coordinates")
-	}
-
-	octaves := int(params[0])
-	lacunarity := params[1]
-	gain := params[2]
-	coords := params[3:]
-
-	if octaves <= 0 {
-		return 0
-	}
-
-	var sum float32
-	var amp float32 = 1
-	var freq float32 = 1
-	var totalAmp float32
-
-	for o := 0; o < octaves; o++ {
-		// Scale coordinates by frequency
-		scaledCoords := make([]float32, len(coords))
-		for i, coord := range coords {
-			scaledCoords[i] = coord * freq
-		}
-
-		sum += amp * f.simplex.Eval(scaledCoords...)
-		totalAmp += amp
-		freq *= lacunarity
-		amp *= gain
-	}
-
-	if totalAmp > 0 {
-		return sum / totalAmp
-	}
-	return 0
 }
 
 // noise1D computes 1D simplex noise (using 2D with y=0)
@@ -322,4 +262,53 @@ func floor(x float32) int {
 		return v - 1
 	}
 	return v
+}
+
+// ---------------------------------- Fractal Brownian Motion ----------------------------------
+
+// FBM represents a fractal Brownian motion generator
+type FBM struct {
+	simplex *Simplex
+}
+
+// NewFBM creates a new FBM generator with the given seed
+func NewFBM(seed uint32) *FBM {
+	return &FBM{
+		simplex: NewSimplex(seed),
+	}
+}
+
+// Eval evaluates fractal Brownian motion at the given coordinates
+// First 3 parameters are lacunarity, gain, octaves,  followed by 1-3 coordinates
+func (f *FBM) Eval(lacunarity, gain float32, octaves int, coords ...float32) float32 {
+	if len(coords) < 1 || len(coords) > 3 {
+		panic("noise: fBM requires at least 1 and at most 3 coordinates")
+	}
+
+	if octaves <= 0 {
+		return 0
+	}
+
+	var sum float32
+	var amp float32 = 1
+	var freq float32 = 1
+	var totalAmp float32
+
+	for o := 0; o < octaves; o++ {
+		// Scale coordinates by frequency
+		scaledCoords := make([]float32, len(coords))
+		for i, coord := range coords {
+			scaledCoords[i] = coord * freq
+		}
+
+		sum += amp * f.simplex.Eval(scaledCoords...)
+		totalAmp += amp
+		freq *= lacunarity
+		amp *= gain
+	}
+
+	if totalAmp > 0 {
+		return sum / totalAmp
+	}
+	return 0
 }

@@ -1,7 +1,6 @@
 package noise
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -11,34 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-/*
-cpu: 13th Gen Intel(R) Core(TM) i7-13700K
-BenchmarkNoise/2d_10x10-24         	 1269060	      1002 ns/op	       0 B/op	       0 allocs/op
-BenchmarkNoise/2d_100x100-24       	   10000	    103023 ns/op	       0 B/op	       0 allocs/op
-BenchmarkNoise/2d_1000x1000-24     	     100	  10407688 ns/op	       0 B/op	       0 allocs/op
-*/
-func BenchmarkNoise(b *testing.B) {
-	var out float32
-	s := NewSimplex(0)
-	for _, size := range []int{10, 100, 1000} {
-		b.Run(fmt.Sprintf("2d_%vx%v", size, size), func(b *testing.B) {
-			b.ReportAllocs()
-			b.ResetTimer()
-
-			for n := 0; n < b.N; n++ {
-				for x := 0; x < size; x++ {
-					for y := 0; y < size; y++ {
-						out = s.Eval(float32(x), float32(y))
-					}
-				}
-			}
-		})
-
-	}
-
-	assert.NotZero(b, out)
-}
 
 func TestSimplex_500x500(t *testing.T) {
 	n := 500
@@ -95,13 +66,13 @@ func TestFBM_Eval(t *testing.T) {
 	f := NewFBM(42)
 
 	// Test 2D FBM
-	v := f.Eval(4, 2.0, 0.5, 1.5, 2.5) // 4 octaves, lacunarity=2.0, gain=0.5, x=1.5, y=2.5
+	v := f.Eval(2.0, 0.5, 4, 1.5, 2.5) // 4 octaves, lacunarity=2.0, gain=0.5, x=1.5, y=2.5
 	assert.True(t, v >= -1 && v <= 1, "FBM should be roughly in [-1,1]")
 
 	// Test determinism
-	assert.Equal(t, v, f.Eval(4, 2.0, 0.5, 1.5, 2.5), "FBM should be deterministic")
+	assert.Equal(t, v, f.Eval(2.0, 0.5, 4, 1.5, 2.5), "FBM should be deterministic")
 
 	// Test 3D FBM
-	v3 := f.Eval(3, 2.0, 0.5, 1.0, 2.0, 3.0)
+	v3 := f.Eval(2.0, 0.5, 3, 1.0, 2.0, 3.0)
 	assert.True(t, v3 >= -2 && v3 <= 2, "3D FBM should be reasonable")
 }
