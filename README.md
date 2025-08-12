@@ -25,7 +25,7 @@ This package provides **noise generation** and **sparse point sampling** algorit
 - ❌ True Poisson-disk sampling (this implements SSI, which is faster but different)
 
 
-### Simplex Noise
+## Simplex Noise
 Classic simplex noise for smooth procedural generation:
 
 <p align="center">
@@ -53,7 +53,7 @@ value2D := s.Eval(10.5, 20.3)
 value3D := s.Eval(10.5, 20.3, 30.1)
 ```
 
-### Fractal Brownian Motion (fBM)
+## Fractal Brownian Motion (fBM)
 Multi-octave noise for complex patterns:
 
 <p align="center">
@@ -81,7 +81,7 @@ value2D := fbm.Eval(2.0, 0.5, 4, 10.5, 20.3)
 value3D := fbm.Eval(2.0, 0.5, 4, 10.5, 20.3, 30.1)
 ```
 
-### White Noise
+## White Noise
 Generate deterministic white noise in [-1, 1] range:
 
 <p align="center">
@@ -110,7 +110,7 @@ value := noise.White(12345, 1.0, 2.0, 3.0, 4.0, 5.0)
 
 Generate deterministic random values based on seed and input coordinates:
 
-### Basic Random Values
+## Basic Random Values
 
 ```go
 const seed = uint32(12345)
@@ -131,7 +131,7 @@ norm32 := noise.Norm32(seed, x)
 norm64 := noise.Norm64(seed, x)
 ```
 
-### Bounded Random Values
+## Bounded Random Values
 
 ```go
 // Random integers in [0, n)
@@ -151,7 +151,7 @@ u64 := noise.Uint64In(seed, 0, 255, x)  // [0, 255]
 u := noise.UintIn(seed, 1, 10, x)       // [1, 10]
 ```
 
-### Probability Functions
+## Probability Functions
 
 ```go
 // Roll dice - returns true if random value < probability
@@ -167,7 +167,7 @@ The package provides Simple Sequential Inhibition (SSI) algorithms for generatin
 <br><em>1D sparse point distribution</em>
 </p>
 
-### 1D Sparse Points
+## 1D Sparse Points
 
 ```go
 // Generate 1D points with minimum distance of 1.0 unit
@@ -186,7 +186,7 @@ for ix := range noise.Sparse1(12345, 512, 8) {
 <br><em>2D sparse point distribution</em>
 </p>
 
-### 2D Sparse Points
+## 2D Sparse Points
 
 ```go
 // Generate 2D points with minimum distance of 1.0 unit
