@@ -26,7 +26,7 @@ This package provides **noise generation** and **sparse point sampling** algorit
 
 
 ## Simplex Noise
-Classic simplex noise for smooth procedural generation:
+Classic simplex noise for smooth procedural generation.
 
 <p align="center">
 <img src="fixtures/simplex1d.png" alt="1D Simplex Noise" width="400">
@@ -54,7 +54,7 @@ value3D := s.Eval(10.5, 20.3, 30.1)
 ```
 
 ## Fractal Brownian Motion (fBM)
-Multi-octave noise for complex patterns:
+Multi-octave noise for complex patterns.
 
 <p align="center">
 <img src="fixtures/fbm1d.png" alt="1D fBM Noise" width="400">
@@ -82,7 +82,7 @@ value3D := fbm.Eval(2.0, 0.5, 4, 10.5, 20.3, 30.1)
 ```
 
 ## White Noise
-Generate deterministic white noise in [-1, 1] range:
+Generate deterministic white noise in [-1, 1] range.
 
 <p align="center">
 <img src="fixtures/white1d.png" alt="1D White Noise" width="400">
@@ -108,9 +108,10 @@ value := noise.White(12345, 10.5, 20.3, 30.1)
 value := noise.White(12345, 1.0, 2.0, 3.0, 4.0, 5.0)
 ```
 
-Generate deterministic random values based on seed and input coordinates:
 
 ## Basic Random Values
+
+Generate deterministic random values based on seed and input coordinates.
 
 ```go
 const seed = uint32(12345)
