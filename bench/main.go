@@ -129,6 +129,20 @@ func runBenchmarks(b *bench.B) {
 		{"Roll64", func(i int) {
 			_ = noise.Roll64(seed, 0.5, uint64(i))
 		}},
+
+		// Sparse benchmarks
+		{"sparse 1D", func(i int) {
+			count := 0
+			for range noise.Sparse1(seed+uint32(i), 100, 5) {
+				count++
+			}
+		}},
+		{"sparse 2D", func(i int) {
+			count := 0
+			for range noise.Sparse2(seed+uint32(i), 100, 100, 5) {
+				count++
+			}
+		}},
 	}
 
 	// Run all benchmarks

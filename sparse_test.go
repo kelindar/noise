@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPoisson(t *testing.T) {
+func TestSparse(t *testing.T) {
 	tests := []struct {
 		name     string
 		fixture  string
@@ -22,7 +22,7 @@ func TestPoisson(t *testing.T) {
 			fixture: "fixtures/sparse1d.png",
 			generate: func() any {
 				w, h, gap := 400, 100, 20
-				return generateSparseFill1D(w, h, SparseFill1(42, w, gap))
+				return generateSparse1D(w, h, Sparse1(42, w, gap))
 			},
 			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
@@ -34,7 +34,7 @@ func TestPoisson(t *testing.T) {
 			fixture: "fixtures/sparse2d.png",
 			generate: func() any {
 				w, h, gap := 200, 200, 10
-				return generateSparseFill2D(w, h, SparseFill2(42, w, h, gap))
+				return generateSparse2D(w, h, Sparse2(42, w, h, gap))
 			},
 			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
@@ -62,8 +62,8 @@ func TestPoisson(t *testing.T) {
 	}
 }
 
-// generateSparseFill2D creates an image with SparseFill2D-distributed points
-func generateSparseFill2D(width, height int, gen func(func([2]int) bool)) *image.Gray {
+// generateSparse2D creates an image with SparseFill2D-distributed points
+func generateSparse2D(width, height int, gen func(func([2]int) bool)) *image.Gray {
 	img := image.NewGray(image.Rect(0, 0, width, height))
 
 	// Fill background with white
@@ -99,8 +99,8 @@ func generateSparseFill2D(width, height int, gen func(func([2]int) bool)) *image
 	return img
 }
 
-// generateSparseFill1D creates a 1D visualization of SparseFill1D points
-func generateSparseFill1D(width, height int, gen func(func(int) bool)) *image.Gray {
+// generateSparse1D creates a 1D visualization of SparseFill1D points
+func generateSparse1D(width, height int, gen func(func(int) bool)) *image.Gray {
 	img := image.NewGray(image.Rect(0, 0, width, height))
 
 	// Fill background with white
