@@ -3,6 +3,8 @@ package noise
 import (
 	"iter"
 	"math"
+
+	"github.com/kelindar/bitmap"
 )
 
 // SSI1 generates a 1D hard-core pattern as a streaming iterator.
@@ -29,26 +31,27 @@ func SSI1(seed uint32, r1 int) iter.Seq[float32] {
 			return
 		}
 
-		// Spatial grid: each cell tracks if it contains a point
+		// Spatial grid using bitmap: each bit tracks if a cell contains a point
 		// Grid resolution: 0.5 units per cell (since minDist = 1.0)
 		gridSize := r1*4 + 10 // Extra padding for jitter
-		grid := make([]bool, gridSize)
-		gridOffset := gridSize / 2 // Center offset
+		var grid bitmap.Bitmap
+		grid.Grow(uint32(gridSize - 1)) // Preallocate bitmap to avoid reallocations
+		gridOffset := gridSize / 2      // Center offset
 		const minDist = 1.0
 		const cellSize = 0.5 // Grid resolution
 
 		// Convert world coordinate to grid index
-		worldToGrid := func(x float32) int {
-			return int(x/cellSize) + gridOffset
+		worldToGrid := func(x float32) uint32 {
+			return uint32(int(x/cellSize) + gridOffset)
 		}
 
 		// Check if position conflicts with existing points
 		isValid := func(x float32) bool {
 			gx := worldToGrid(x)
-			// Check 3x3 neighborhood (covers minDist = 1.0 with cellSize = 0.5)
+			// Check 5-cell neighborhood (covers minDist = 1.0 with cellSize = 0.5)
 			for dx := -2; dx <= 2; dx++ {
-				idx := gx + dx
-				if idx >= 0 && idx < gridSize && grid[idx] {
+				idx := int(gx) + dx
+				if idx >= 0 && idx < gridSize && grid.Contains(uint32(idx)) {
 					return false // Conflict found
 				}
 			}
@@ -58,8 +61,8 @@ func SSI1(seed uint32, r1 int) iter.Seq[float32] {
 		// Mark position as occupied
 		markOccupied := func(x float32) {
 			gx := worldToGrid(x)
-			if gx >= 0 && gx < gridSize {
-				grid[gx] = true
+			if int(gx) >= 0 && int(gx) < gridSize {
+				grid.Set(gx)
 			}
 		}
 
@@ -118,35 +121,36 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 			return
 		}
 
-		// 2D Spatial grid: each cell tracks if it contains a point
+		// 2D Spatial grid using bitmap: each bit tracks if a cell contains a point
 		// Grid resolution: 0.5 units per cell (since minDist = 1.0)
 		gridW := r1*4 + 10 // Extra padding for jitter
 		gridH := r2*4 + 10
-		grid := make([][]bool, gridH)
-		for i := range grid {
-			grid[i] = make([]bool, gridW)
-		}
-		gridOffsetX := gridW / 2 // Center offset
+		var grid bitmap.Bitmap
+		totalCells := uint32(gridW * gridH)
+		grid.Grow(totalCells - 1) // Preallocate bitmap to avoid reallocations
+		gridOffsetX := gridW / 2  // Center offset
 		gridOffsetY := gridH / 2
 		const minDist2 = 1.0 // Squared distance
 		const cellSize = 0.5 // Grid resolution
 
-		// Convert world coordinates to grid indices
-		worldToGrid := func(x, y float32) (int, int) {
-			gx := int(x/cellSize) + gridOffsetX
-			gy := int(y/cellSize) + gridOffsetY
-			return gx, gy
+		// Convert grid coordinates to 1D index
+		coordToIndex := func(gx, gy int) uint32 {
+			return uint32(gy*gridW + gx)
 		}
 
 		// Check if position conflicts with existing points
 		isValid := func(x, y float32) bool {
-			gx, gy := worldToGrid(x, y)
+			gx := int(x/cellSize) + gridOffsetX
+			gy := int(y/cellSize) + gridOffsetY
 			// Check 5x5 neighborhood (covers minDist = 1.0 with cellSize = 0.5)
 			for dy := -2; dy <= 2; dy++ {
 				for dx := -2; dx <= 2; dx++ {
 					nx, ny := gx+dx, gy+dy
-					if nx >= 0 && nx < gridW && ny >= 0 && ny < gridH && grid[ny][nx] {
-						return false // Conflict found
+					if nx >= 0 && nx < gridW && ny >= 0 && ny < gridH {
+						idx := coordToIndex(nx, ny)
+						if grid.Contains(idx) {
+							return false // Conflict found
+						}
 					}
 				}
 			}
@@ -155,9 +159,11 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 
 		// Mark position as occupied
 		markOccupied := func(x, y float32) {
-			gx, gy := worldToGrid(x, y)
+			gx := int(x/cellSize) + gridOffsetX
+			gy := int(y/cellSize) + gridOffsetY
 			if gx >= 0 && gx < gridW && gy >= 0 && gy < gridH {
-				grid[gy][gx] = true
+				idx := coordToIndex(gx, gy)
+				grid.Set(idx)
 			}
 		}
 
@@ -327,12 +333,4 @@ func Sparse2(seed uint32, w, h, gap int) iter.Seq[[2]int] {
 			}
 		}
 	}
-}
-
-// local helper
-func abs(x float32) float32 {
-	if x < 0 {
-		return -x
-	}
-	return x
 }
