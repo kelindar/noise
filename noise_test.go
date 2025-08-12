@@ -15,12 +15,12 @@ func TestWhite(t *testing.T) {
 	tests := []struct {
 		name     string
 		fixture  string
-		generate func() interface{}
+		generate func() any
 	}{
 		{
 			name:    "White2D",
 			fixture: "fixtures/white2d.png",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate2DNoiseImage(100, 100, 1.0, func(x, y float32) float32 {
 					return White(seed, x, y)
 				})
@@ -29,7 +29,7 @@ func TestWhite(t *testing.T) {
 		{
 			name:    "White1D",
 			fixture: "fixtures/white1d.png",
-			generate: func() interface{} {
+			generate: func() any {
 				return generate1DNoiseImage(400, 100, 1.0, func(x float32) float32 {
 					return White(seed, x)
 				})
