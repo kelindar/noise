@@ -130,17 +130,12 @@ func SparseFill1(seed uint32, w, gap int) iter.Seq[int] {
 		// Radius in cell units so that after scaling and centering we cover [0,w)
 		r1 := int(math.Ceil(float64(w) / float64(2*gap)))
 		center := float32(w) / 2
-		seen := make(map[int]struct{})
 
 		for x := range Sparse1(seed, r1) {
 			ix := int(x*float32(gap) + center) // scale and center, cast like in tests
 			if ix < 0 || ix >= w {
 				continue
 			}
-			if _, ok := seen[ix]; ok {
-				continue
-			}
-			seen[ix] = struct{}{}
 			if !yield(ix) {
 				return
 			}
@@ -160,7 +155,6 @@ func SparseFill2(seed uint32, w, h, gap int) iter.Seq[[2]int] {
 		r2 := int(math.Ceil(float64(h) / float64(2*gap)))
 		centerX := float32(w) / 2
 		centerY := float32(h) / 2
-		seen := make(map[int]struct{}) // key := iy*w + ix
 
 		for pt := range Sparse2(seed, r1, r2) {
 			ix := int(pt[0]*float32(gap) + centerX) // scale and center, cast like in tests
@@ -168,11 +162,6 @@ func SparseFill2(seed uint32, w, h, gap int) iter.Seq[[2]int] {
 			if ix < 0 || ix >= w || iy < 0 || iy >= h {
 				continue
 			}
-			key := iy*w + ix
-			if _, ok := seen[key]; ok {
-				continue
-			}
-			seen[key] = struct{}{}
 			if !yield([2]int{ix, iy}) {
 				return
 			}
