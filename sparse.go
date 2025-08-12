@@ -13,47 +13,51 @@ const (
 	ssiNeighborRadius = 2            // covers 1.0 at 0.5 cell size
 )
 
-// gridIndex1D computes the 1D grid index and bounds check
-func gridIndex1D(x float32, offset, gridSize int) (int, bool) {
-	gx := int(x/ssiCellSize) + offset
-	return gx, gx >= 0 && gx < gridSize
-}
-
-// gridIndex2D computes the 2D grid indices and bounds check
-func gridIndex2D(x, y float32, offX, offY, w, h int) (int, int, bool) {
-	gx := int(x/ssiCellSize) + offX
-	gy := int(y/ssiCellSize) + offY
-	ok := gx >= 0 && gx < w && gy >= 0 && gy < h
-	return gx, gy, ok
-}
-
-// hasNeighbor1D checks any occupied cell within the neighborhood radius
-func hasNeighbor1D(grid bitmap.Bitmap, gx, gridSize int) bool {
-	for dx := -ssiNeighborRadius; dx <= ssiNeighborRadius; dx++ {
-		idx := gx + dx
-		if idx >= 0 && idx < gridSize && grid.Contains(uint32(idx)) {
-			return true
-		}
-	}
-	return false
-}
-
 // coordToIndex packs 2D grid coords into a row-major 1D index
 func coordToIndex(gx, gy, w int) uint32 { return uint32(gy*w + gx) }
 
-// hasNeighbor2D checks any occupied cell within the neighborhood radius
-func hasNeighbor2D(grid bitmap.Bitmap, gx, gy, w, h int) bool {
+// grid encapsulates a 2D bitmap grid used by SSI2
+type grid struct {
+	bitmap.Bitmap
+	w, h       int
+	offX, offY int
+}
+
+func newGrid(r1, r2 int) grid {
+	w := r1*4 + 10
+	h := r2*4 + 10
+	b := make(bitmap.Bitmap, int(uint32(w*h-1)>>6))
+	return grid{Bitmap: b, w: w, h: h, offX: w / 2, offY: h / 2}
+}
+
+// IsValid checks if the given position conflicts with existing points
+func (g *grid) IsValid(x, y float32) bool {
+	gx := int(x/ssiCellSize) + g.offX
+	gy := int(y/ssiCellSize) + g.offY
+	if gx < 0 || gx >= g.w || gy < 0 || gy >= g.h {
+		return false
+	}
+
 	for dy := -ssiNeighborRadius; dy <= ssiNeighborRadius; dy++ {
 		for dx := -ssiNeighborRadius; dx <= ssiNeighborRadius; dx++ {
 			nx, ny := gx+dx, gy+dy
-			if nx >= 0 && nx < w && ny >= 0 && ny < h {
-				if grid.Contains(coordToIndex(nx, ny, w)) {
-					return true
+			if nx >= 0 && nx < g.w && ny >= 0 && ny < g.h {
+				if g.Contains(coordToIndex(nx, ny, g.w)) {
+					return false
 				}
 			}
 		}
 	}
-	return false
+	return true
+}
+
+// Set marks the given position as occupied
+func (g *grid) Set(x, y float32) {
+	gx := int(x/ssiCellSize) + g.offX
+	gy := int(y/ssiCellSize) + g.offY
+	if gx >= 0 && gx < g.w && gy >= 0 && gy < g.h {
+		g.Bitmap.Set(coordToIndex(gx, gy, g.w))
+	}
 }
 
 // SSI1 generates a 1D hard-core pattern as a streaming iterator.
@@ -80,48 +84,9 @@ func SSI1(seed uint32, r1 int) iter.Seq[float32] {
 			return
 		}
 
-		// Spatial grid using bitmap: each bit tracks if a cell contains a point
-		gridSize := r1*4 + 10 // Extra padding for jitter
-		var grid bitmap.Bitmap
-		grid.Grow(uint32(gridSize - 1)) // Preallocate bitmap to avoid reallocations
-		gridOffset := gridSize / 2      // Center offset
-
-		// Check if position conflicts with existing points
-		isValid := func(x float32) bool {
-			gx, ok := gridIndex1D(x, gridOffset, gridSize)
-			return ok && !hasNeighbor1D(grid, gx, gridSize)
-		}
-
-		// Mark position as occupied
-		markOccupied := func(x float32) {
-			gx, ok := gridIndex1D(x, gridOffset, gridSize)
-			if ok {
-				grid.Set(uint32(gx))
-			}
-		}
-
-		tryCell := func(ix int) bool {
-			for t := 0; t < 3; t++ {
-				h := xxhash64(uint64(int64(ix)), uint64(seed)^uint64(t))
-				x := float32(ix) + (Float32(seed, h) - 0.5)
-
-				if isValid(x) {
-					markOccupied(x)
-					return !yield(x)
-				}
-			}
-			return false
-		}
-
-		// BFS-style expansion from center
-		if tryCell(0) {
-			return
-		}
-		for r := 1; r <= r1; r++ {
-			if tryCell(r) {
-				return
-			}
-			if tryCell(-r) {
+		// Delegate to SSI2 (1 row), yield x only
+		for p := range SSI2(seed, r1, 1) {
+			if !yield(p[0]) {
 				return
 			}
 		}
@@ -155,36 +120,15 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 			return
 		}
 
-		// 2D Spatial grid using bitmap: each bit tracks if a cell contains a point
-		gridW := r1*4 + 10 // Extra padding for jitter
-		gridH := r2*4 + 10
-		var grid bitmap.Bitmap
-		grid.Grow(uint32(gridW*gridH - 1)) // Preallocate bitmap to avoid reallocations
-		gridOffsetX := gridW / 2           // Center offset
-		gridOffsetY := gridH / 2
-
-		// Check if position conflicts with existing points
-		isValid := func(x, y float32) bool {
-			gx, gy, ok := gridIndex2D(x, y, gridOffsetX, gridOffsetY, gridW, gridH)
-			return ok && !hasNeighbor2D(grid, gx, gy, gridW, gridH)
-		}
-
-		// Mark position as occupied
-		markOccupied := func(x, y float32) {
-			gx, gy, ok := gridIndex2D(x, y, gridOffsetX, gridOffsetY, gridW, gridH)
-			if ok {
-				grid.Set(coordToIndex(gx, gy, gridW))
-			}
-		}
-
+		g := newGrid(r1, r2)
 		tryCell := func(ix, iy int) bool {
 			for t := 0; t < 2; t++ {
 				h := xxhash64(uint64(int64(ix))*0x9e3779b97f4a7c15^uint64(int64(iy))*0xc2b2ae3d27d4eb4f, uint64(seed)^uint64(t))
 				x := float32(ix) + (Float32(seed, h) - 0.5)
 				y := float32(iy) + (Float32(seed^1, h) - 0.5)
 
-				if isValid(x, y) {
-					markOccupied(x, y)
+				if g.IsValid(x, y) {
+					g.Set(x, y)
 					pt := [2]float32{x, y}
 					return !yield(pt)
 				}
@@ -196,32 +140,15 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 		if tryCell(0, 0) {
 			return
 		}
-		maxR := r1
-		if r2 > maxR {
-			maxR = r2
-		}
+		maxR := max(r1, r2)
 		for r := 1; r <= maxR; r++ {
-			// Pre-compute valid ranges for this ring to eliminate redundant boundary checks
-			ixMin := -r
-			if ixMin < -r1 {
-				ixMin = -r1
-			}
-			ixMax := r
-			if ixMax > r1 {
-				ixMax = r1
-			}
-
-			iyMin := -r + 1
-			if iyMin < -r2 {
-				iyMin = -r2
-			}
-			iyMax := r - 1
-			if iyMax > r2 {
-				iyMax = r2
-			}
+			ixMin := max(-r, -r1)
+			ixMax := min(r, r1)
+			iyMin := max(-r+1, -r2)
+			iyMax := min(r-1, r2)
 
 			// Top edge (y = -r)
-			if -r >= -r2 && -r <= r2 {
+			if r <= r2 {
 				for ix := ixMin; ix <= ixMax; ix++ {
 					if tryCell(ix, -r) {
 						return
@@ -230,7 +157,7 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 			}
 
 			// Bottom edge (y = r)
-			if r >= -r2 && r <= r2 {
+			if r <= r2 {
 				for ix := ixMin; ix <= ixMax; ix++ {
 					if tryCell(ix, r) {
 						return
@@ -239,7 +166,7 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 			}
 
 			// Left edge (x = -r)
-			if -r >= -r1 && -r <= r1 {
+			if r <= r1 {
 				for iy := iyMin; iy <= iyMax; iy++ {
 					if tryCell(-r, iy) {
 						return
@@ -248,7 +175,7 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 			}
 
 			// Right edge (x = r)
-			if r >= -r1 && r <= r1 {
+			if r <= r1 {
 				for iy := iyMin; iy <= iyMax; iy++ {
 					if tryCell(r, iy) {
 						return
