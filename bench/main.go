@@ -113,23 +113,6 @@ func runBenchmarks(b *bench.B) {
 			_ = noise.White(seed, p[0], p[1], p[2])
 		}},
 
-		// Random function benchmarks (using uint64 parameter)
-		{"Float64", func(i int) {
-			_ = noise.Float64(seed, uint64(i))
-		}},
-		{"IntN", func(i int) {
-			_ = noise.IntN(seed, 100, uint64(i))
-		}},
-		{"Norm64", func(i int) {
-			_ = noise.Norm64(seed, uint64(i))
-		}},
-		{"IntIn", func(i int) {
-			_ = noise.IntIn(seed, 10, 50, uint64(i))
-		}},
-		{"Roll64", func(i int) {
-			_ = noise.Roll64(seed, 0.5, uint64(i))
-		}},
-
 		// Sparse benchmarks
 		{"sparse 1D", func(i int) {
 			count := 0
@@ -156,6 +139,23 @@ func runBenchmarks(b *bench.B) {
 			for range noise.SSI2(seed+uint32(i), 100, 100) {
 				count++
 			}
+		}},
+
+		// Random function benchmarks (using uint64 parameter)
+		{"float", func(i int) {
+			_ = noise.Float64(seed, uint64(i))
+		}},
+		{"int n", func(i int) {
+			_ = noise.IntN(seed, 100, uint64(i))
+		}},
+		{"norm", func(i int) {
+			_ = noise.Norm64(seed, uint64(i))
+		}},
+		{"int in", func(i int) {
+			_ = noise.IntIn(seed, 10, 50, uint64(i))
+		}},
+		{"roll", func(i int) {
+			_ = noise.Roll64(seed, 0.5, uint64(i))
 		}},
 	}
 
