@@ -208,12 +208,10 @@ for pt := range noise.Sparse2(12345, 512, 256, 8) {
 }
 ```
 
-
 ## Performance
 
 Benchmarks run on 13th Gen Intel(R) Core(TM) i7-13700K CPU. Results may vary based on hardware and environment.
 
-### Sparse Point Generation
 ```
 name                 time/op      ops/s        allocs/op   
 -------------------- ------------ ------------ ------------
