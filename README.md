@@ -9,7 +9,7 @@
 <a href="https://coveralls.io/github/kelindar/noise"><img src="https://coveralls.io/repos/github/kelindar/noise/badge.svg" alt="Coverage"></a>
 </p>
 
-## High-Performance Noise & Sparse Point Generation
+## Procedural Generation Methods
 
 This package provides **noise generation** and **sparse point sampling** algorithms for Go, focusing on speed and deterministic output. It includes both classic noise functions and advanced sparse sampling techniques for procedural generation, simulations, and spatial applications. I built this primarily with offline procedural generation in mind.
 
