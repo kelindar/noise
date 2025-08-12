@@ -143,6 +143,20 @@ func runBenchmarks(b *bench.B) {
 				count++
 			}
 		}},
+
+		// Sparse benchmarks
+		{"ssi 1D", func(i int) {
+			count := 0
+			for range noise.SSI1(seed+uint32(i), 100) {
+				count++
+			}
+		}},
+		{"ssi 2D", func(i int) {
+			count := 0
+			for range noise.SSI2(seed+uint32(i), 100, 100) {
+				count++
+			}
+		}},
 	}
 
 	// Run all benchmarks

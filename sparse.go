@@ -28,28 +28,55 @@ func SSI1(seed uint32, r1 int) iter.Seq[float32] {
 		if r1 <= 0 {
 			return
 		}
-		points := make([]float32, 0, 2*r1+1)
+
+		// Spatial grid: each cell tracks if it contains a point
+		// Grid resolution: 0.5 units per cell (since minDist = 1.0)
+		gridSize := r1*4 + 10 // Extra padding for jitter
+		grid := make([]bool, gridSize)
+		gridOffset := gridSize / 2 // Center offset
 		const minDist = 1.0
+		const cellSize = 0.5 // Grid resolution
+
+		// Convert world coordinate to grid index
+		worldToGrid := func(x float32) int {
+			return int(x/cellSize) + gridOffset
+		}
+
+		// Check if position conflicts with existing points
+		isValid := func(x float32) bool {
+			gx := worldToGrid(x)
+			// Check 3x3 neighborhood (covers minDist = 1.0 with cellSize = 0.5)
+			for dx := -2; dx <= 2; dx++ {
+				idx := gx + dx
+				if idx >= 0 && idx < gridSize && grid[idx] {
+					return false // Conflict found
+				}
+			}
+			return true
+		}
+
+		// Mark position as occupied
+		markOccupied := func(x float32) {
+			gx := worldToGrid(x)
+			if gx >= 0 && gx < gridSize {
+				grid[gx] = true
+			}
+		}
 
 		tryCell := func(ix int) bool {
 			for t := 0; t < 3; t++ {
 				h := xxhash64(uint64(int64(ix)), uint64(seed)^uint64(t))
 				x := float32(ix) + (Float32(seed, h) - 0.5)
-				ok := true
-				for _, e := range points {
-					if abs(x-e) < minDist {
-						ok = false
-						break
-					}
-				}
-				if ok {
-					points = append(points, x)
+
+				if isValid(x) {
+					markOccupied(x)
 					return !yield(x)
 				}
 			}
 			return false
 		}
 
+		// BFS-style expansion from center
 		if tryCell(0) {
 			return
 		}
@@ -90,32 +117,66 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 		if r1 <= 0 || r2 <= 0 {
 			return
 		}
-		pts := make([][2]float32, 0, (2*r1+1)*(2*r2+1))
-		const min2 = 1.0
+
+		// 2D Spatial grid: each cell tracks if it contains a point
+		// Grid resolution: 0.5 units per cell (since minDist = 1.0)
+		gridW := r1*4 + 10 // Extra padding for jitter
+		gridH := r2*4 + 10
+		grid := make([][]bool, gridH)
+		for i := range grid {
+			grid[i] = make([]bool, gridW)
+		}
+		gridOffsetX := gridW / 2 // Center offset
+		gridOffsetY := gridH / 2
+		const minDist2 = 1.0 // Squared distance
+		const cellSize = 0.5 // Grid resolution
+
+		// Convert world coordinates to grid indices
+		worldToGrid := func(x, y float32) (int, int) {
+			gx := int(x/cellSize) + gridOffsetX
+			gy := int(y/cellSize) + gridOffsetY
+			return gx, gy
+		}
+
+		// Check if position conflicts with existing points
+		isValid := func(x, y float32) bool {
+			gx, gy := worldToGrid(x, y)
+			// Check 5x5 neighborhood (covers minDist = 1.0 with cellSize = 0.5)
+			for dy := -2; dy <= 2; dy++ {
+				for dx := -2; dx <= 2; dx++ {
+					nx, ny := gx+dx, gy+dy
+					if nx >= 0 && nx < gridW && ny >= 0 && ny < gridH && grid[ny][nx] {
+						return false // Conflict found
+					}
+				}
+			}
+			return true
+		}
+
+		// Mark position as occupied
+		markOccupied := func(x, y float32) {
+			gx, gy := worldToGrid(x, y)
+			if gx >= 0 && gx < gridW && gy >= 0 && gy < gridH {
+				grid[gy][gx] = true
+			}
+		}
 
 		tryCell := func(ix, iy int) bool {
 			for t := 0; t < 2; t++ {
 				h := xxhash64(uint64(int64(ix))*0x9e3779b97f4a7c15^uint64(int64(iy))*0xc2b2ae3d27d4eb4f, uint64(seed)^uint64(t))
 				x := float32(ix) + (Float32(seed, h) - 0.5)
 				y := float32(iy) + (Float32(seed^1, h) - 0.5)
-				ok := true
-				for _, q := range pts {
-					dx := x - q[0]
-					dy := y - q[1]
-					if dx*dx+dy*dy < min2 {
-						ok = false
-						break
-					}
-				}
-				if ok {
+
+				if isValid(x, y) {
+					markOccupied(x, y)
 					pt := [2]float32{x, y}
-					pts = append(pts, pt)
 					return !yield(pt)
 				}
 			}
 			return false
 		}
 
+		// BFS-style expansion from center
 		if tryCell(0, 0) {
 			return
 		}
@@ -124,32 +185,57 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 			maxR = r2
 		}
 		for r := 1; r <= maxR; r++ {
-			// Only iterate within the bounds defined by r1 and r2
-			for ix := -r; ix <= r; ix++ {
-				if ix >= -r1 && ix <= r1 {
-					if -r >= -r2 && -r <= r2 {
-						if tryCell(ix, -r) {
-							return
-						}
-					}
-					if r >= -r2 && r <= r2 {
-						if tryCell(ix, r) {
-							return
-						}
+			// Pre-compute valid ranges for this ring to eliminate redundant boundary checks
+			ixMin := -r
+			if ixMin < -r1 {
+				ixMin = -r1
+			}
+			ixMax := r
+			if ixMax > r1 {
+				ixMax = r1
+			}
+
+			iyMin := -r + 1
+			if iyMin < -r2 {
+				iyMin = -r2
+			}
+			iyMax := r - 1
+			if iyMax > r2 {
+				iyMax = r2
+			}
+
+			// Top edge (y = -r)
+			if -r >= -r2 && -r <= r2 {
+				for ix := ixMin; ix <= ixMax; ix++ {
+					if tryCell(ix, -r) {
+						return
 					}
 				}
 			}
-			for iy := -r + 1; iy <= r-1; iy++ {
-				if iy >= -r2 && iy <= r2 {
-					if -r >= -r1 && -r <= r1 {
-						if tryCell(-r, iy) {
-							return
-						}
+
+			// Bottom edge (y = r)
+			if r >= -r2 && r <= r2 {
+				for ix := ixMin; ix <= ixMax; ix++ {
+					if tryCell(ix, r) {
+						return
 					}
-					if r >= -r1 && r <= r1 {
-						if tryCell(r, iy) {
-							return
-						}
+				}
+			}
+
+			// Left edge (x = -r)
+			if -r >= -r1 && -r <= r1 {
+				for iy := iyMin; iy <= iyMax; iy++ {
+					if tryCell(-r, iy) {
+						return
+					}
+				}
+			}
+
+			// Right edge (x = r)
+			if r >= -r1 && r <= r1 {
+				for iy := iyMin; iy <= iyMax; iy++ {
+					if tryCell(r, iy) {
+						return
 					}
 				}
 			}
@@ -183,8 +269,11 @@ func Sparse1(seed uint32, w, gap int) iter.Seq[int] {
 		r1 := int(math.Ceil(float64(w) / float64(2*gap)))
 		center := float32(w) / 2
 
+		// Pre-compute gap as float32 to reduce conversions
+		gapF := float32(gap)
+
 		for x := range SSI1(seed, r1) {
-			ix := int(x*float32(gap) + center) // scale and center, cast like in tests
+			ix := int(x*gapF + center) // scale and center, cast like in tests
 			if ix < 0 || ix >= w {
 				continue
 			}
@@ -224,9 +313,12 @@ func Sparse2(seed uint32, w, h, gap int) iter.Seq[[2]int] {
 		centerX := float32(w) / 2
 		centerY := float32(h) / 2
 
+		// Pre-compute gap as float32 to reduce conversions
+		gapF := float32(gap)
+
 		for pt := range SSI2(seed, r1, r2) {
-			ix := int(pt[0]*float32(gap) + centerX) // scale and center, cast like in tests
-			iy := int(pt[1]*float32(gap) + centerY)
+			ix := int(pt[0]*gapF + centerX) // scale and center, cast like in tests
+			iy := int(pt[1]*gapF + centerY)
 			if ix < 0 || ix >= w || iy < 0 || iy >= h {
 				continue
 			}

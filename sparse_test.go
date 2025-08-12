@@ -33,7 +33,7 @@ func TestSparse(t *testing.T) {
 			name:    "Sparse2D",
 			fixture: "fixtures/sparse2d.png",
 			generate: func() any {
-				w, h, gap := 200, 200, 10
+				w, h, gap := 200, 200, 5
 				return generateSparse2D(w, h, Sparse2(42, w, h, gap))
 			},
 			compare: func(t *testing.T, expected, actual any, name string) {
@@ -45,6 +45,12 @@ func TestSparse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := tt.generate()
+
+			// Save the generated image for reference
+			/*outFile, err := os.Create("out_" + tt.name + ".png")
+			assert.NoError(t, err)
+			defer outFile.Close()
+			png.Encode(outFile, actual.(image.Image))*/
 
 			// Load reference from fixtures
 			refFile, err := os.Open(tt.fixture)
