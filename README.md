@@ -13,10 +13,6 @@
 
 This package provides **noise generation** and **sparse point sampling** algorithms for Go, focusing on speed and deterministic output. It includes both classic noise functions and advanced sparse sampling techniques for procedural generation, simulations, and spatial applications. I built this primarily with offline procedural generation in mind.
 
-- **Fast Noise Generation:** Optimized simplex noise with millions of operations per second
-- **Sparse Point Sampling:** Simple Sequential Inhibition (SSI) for well-spaced point distributions
-- **Deterministic:** Seeded random generation ensures reproducible results
-- **Zero Allocations:** Memory-efficient implementations with minimal garbage collection
 
 **Use When:**
 - ✅ Generating procedural terrain, textures, or patterns
@@ -28,61 +24,26 @@ This package provides **noise generation** and **sparse point sampling** algorit
 - ❌ Cryptographic randomness or security-sensitive applications
 - ❌ True Poisson-disk sampling (this implements SSI, which is faster but different)
 
-## Sparse Point Generation
-
-The package provides **Simple Sequential Inhibition (SSI)** algorithms for generating well-spaced point distributions. These are ideal for procedural placement, sampling, and avoiding clustering artifacts.
-
-### 1D Sparse Points
-
-```go
-// Generate 1D points with minimum distance of 1.0 unit
-for x := range noise.SSI1(12345, 128) {
-    fmt.Printf("Point at x=%.2f\n", x)
-}
-
-// Generate integer positions with custom spacing
-for ix := range noise.Sparse1(12345, 512, 8) {
-    fmt.Printf("Pixel at x=%d\n", ix)
-}
-```
-
-### 2D Sparse Points
-
-```go
-// Generate 2D points with minimum distance of 1.0 unit
-for pt := range noise.SSI2(12345, 64, 64) {
-    x, y := pt[0], pt[1]
-    fmt.Printf("Point at (%.2f, %.2f)\n", x, y)
-}
-
-// Generate integer positions for pixel placement
-for pt := range noise.Sparse2(12345, 512, 256, 8) {
-    x, y := pt[0], pt[1]
-    fmt.Printf("Pixel at (%d, %d)\n", x, y)
-}
-```
-
 ## Noise Generation
 
-### White Noise
-Generate deterministic white noise in [-1, 1] range:
-
-```go
-// 1D white noise
-value := noise.White(12345, 10.5)
-
-// 2D white noise
-value := noise.White(12345, 10.5, 20.3)
-
-// 3D white noise
-value := noise.White(12345, 10.5, 20.3, 30.1)
-
-// N-dimensional white noise
-value := noise.White(12345, 1.0, 2.0, 3.0, 4.0, 5.0)
-```
 
 ### Simplex Noise
 Classic simplex noise for smooth procedural generation:
+
+<p align="center">
+<img src="fixtures/simplex1d.png" alt="1D Simplex Noise" width="400">
+<br><em>1D simplex noise pattern</em>
+</p>
+
+<p align="center">
+<img src="fixtures/simplex2d.png" alt="2D Simplex Noise" width="300">
+<br><em>2D simplex noise pattern</em>
+</p>
+
+<p align="center">
+<img src="fixtures/simplex3d.gif" alt="3D Simplex Noise" width="300">
+<br><em>3D simplex noise animation</em>
+</p>
 
 ```go
 // Create a simplex noise generator
@@ -97,6 +58,21 @@ value3D := s.Eval(10.5, 20.3, 30.1)
 ### Fractal Brownian Motion (fBM)
 Multi-octave noise for complex patterns:
 
+<p align="center">
+<img src="fixtures/fbm1d.png" alt="1D fBM Noise" width="400">
+<br><em>1D fractal Brownian motion</em>
+</p>
+
+<p align="center">
+<img src="fixtures/fbm2d.png" alt="2D fBM Noise" width="300">
+<br><em>2D fractal Brownian motion</em>
+</p>
+
+<p align="center">
+<img src="fixtures/fbm3d.gif" alt="3D fBM Noise" width="300">
+<br><em>3D fractal Brownian motion animation</em>
+</p>
+
 ```go
 // Create an fBM generator
 fbm := noise.NewFBM(12345)
@@ -105,6 +81,33 @@ fbm := noise.NewFBM(12345)
 value1D := fbm.Eval(2.0, 0.5, 4, 10.5)
 value2D := fbm.Eval(2.0, 0.5, 4, 10.5, 20.3)
 value3D := fbm.Eval(2.0, 0.5, 4, 10.5, 20.3, 30.1)
+```
+
+### White Noise
+Generate deterministic white noise in [-1, 1] range:
+
+<p align="center">
+<img src="fixtures/white1d.png" alt="1D White Noise" width="400">
+<br><em>1D white noise pattern</em>
+</p>
+
+<p align="center">
+<img src="fixtures/white2d.png" alt="2D White Noise" width="300">
+<br><em>2D white noise pattern</em>
+</p>
+
+```go
+// 1D white noise
+value := noise.White(12345, 10.5)
+
+// 2D white noise
+value := noise.White(12345, 10.5, 20.3)
+
+// 3D white noise
+value := noise.White(12345, 10.5, 20.3, 30.1)
+
+// N-dimensional white noise
+value := noise.White(12345, 1.0, 2.0, 3.0, 4.0, 5.0)
 ```
 
 ## Deterministic Random Functions
@@ -159,6 +162,52 @@ u := noise.UintIn(seed, 1, 10, x)       // [1, 10]
 success32 := noise.Roll32(seed, 0.3, x) // 30% chance
 success64 := noise.Roll64(seed, 0.75, x) // 75% chance
 ```
+
+
+## Sparse Point Generation
+
+The package provides Simple Sequential Inhibition (SSI) algorithms for generating well-spaced point distributions. These are ideal for procedural placement, sampling, and avoiding clustering artifacts.
+
+<p align="center">
+<img src="fixtures/sparse1d.png" alt="1D Sparse Points" width="400">
+<br><em>1D sparse point distribution</em>
+</p>
+
+### 1D Sparse Points
+
+```go
+// Generate 1D points with minimum distance of 1.0 unit
+for x := range noise.SSI1(12345, 128) {
+    fmt.Printf("Point at x=%.2f\n", x)
+}
+
+// Generate integer positions with custom spacing
+for ix := range noise.Sparse1(12345, 512, 8) {
+    fmt.Printf("Pixel at x=%d\n", ix)
+}
+```
+
+<p align="center">
+<img src="fixtures/sparse2d.png" alt="2D Sparse Points" width="400">
+<br><em>2D sparse point distribution</em>
+</p>
+
+### 2D Sparse Points
+
+```go
+// Generate 2D points with minimum distance of 1.0 unit
+for pt := range noise.SSI2(12345, 64, 64) {
+    x, y := pt[0], pt[1]
+    fmt.Printf("Point at (%.2f, %.2f)\n", x, y)
+}
+
+// Generate integer positions for pixel placement
+for pt := range noise.Sparse2(12345, 512, 256, 8) {
+    x, y := pt[0], pt[1]
+    fmt.Printf("Pixel at (%d, %d)\n", x, y)
+}
+```
+
 
 ## Performance
 
