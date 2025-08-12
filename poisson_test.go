@@ -18,6 +18,19 @@ func TestPoisson(t *testing.T) {
 		compare  func(t *testing.T, expected, actual any, name string)
 	}{
 		{
+			name:    "Poisson1D",
+			fixture: "fixtures/poisson1d.png",
+			generate: func() any {
+				w, h, n := 400, 100, 10
+				sx := float32(w) / (2 * float32(n))
+				return generatePoisson1D(w, h, sx, Sparse1(42, n))
+			},
+			compare: func(t *testing.T, expected, actual any, name string) {
+				compareImages(t, expected.(image.Image), actual.(image.Image), name)
+			},
+		},
+
+		{
 			name:    "Poisson2D",
 			fixture: "fixtures/poisson2d.png",
 			generate: func() any {
@@ -31,34 +44,23 @@ func TestPoisson(t *testing.T) {
 			},
 		},
 		{
-			name:    "Poisson1D",
-			fixture: "fixtures/poisson1d.png",
-			generate: func() any {
-				w, h, n := 400, 100, 10
-				sx := float32(w) / (2 * float32(n))
-				return generatePoisson1D(w, h, sx, Sparse1(42, n))
-			},
-			compare: func(t *testing.T, expected, actual any, name string) {
-				compareImages(t, expected.(image.Image), actual.(image.Image), name)
-			},
-		},
-		{
-			name:    "SparseFill2D",
-			fixture: "fixtures/sparsefill2d.png",
-			generate: func() any {
-				w, h, gap := 200, 200, 20
-				return generateSparseFill2D(w, h, SparseFill2(42, w, h, gap))
-			},
-			compare: func(t *testing.T, expected, actual any, name string) {
-				compareImages(t, expected.(image.Image), actual.(image.Image), name)
-			},
-		},
-		{
 			name:    "SparseFill1D",
 			fixture: "fixtures/sparsefill1d.png",
 			generate: func() any {
 				w, h, gap := 400, 100, 20
 				return generateSparseFill1D(w, h, SparseFill1(42, w, gap))
+			},
+			compare: func(t *testing.T, expected, actual any, name string) {
+				compareImages(t, expected.(image.Image), actual.(image.Image), name)
+			},
+		},
+
+		{
+			name:    "SparseFill2D",
+			fixture: "fixtures/sparsefill2d.png",
+			generate: func() any {
+				w, h, gap := 200, 200, 10
+				return generateSparseFill2D(w, h, SparseFill2(42, w, h, gap))
 			},
 			compare: func(t *testing.T, expected, actual any, name string) {
 				compareImages(t, expected.(image.Image), actual.(image.Image), name)
