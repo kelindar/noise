@@ -24,8 +24,6 @@ This package provides **noise generation** and **sparse point sampling** algorit
 - ❌ Cryptographic randomness or security-sensitive applications
 - ❌ True Poisson-disk sampling (this implements SSI, which is faster but different)
 
-## Noise Generation
-
 
 ### Simplex Noise
 Classic simplex noise for smooth procedural generation:
@@ -110,8 +108,6 @@ value := noise.White(12345, 10.5, 20.3, 30.1)
 value := noise.White(12345, 1.0, 2.0, 3.0, 4.0, 5.0)
 ```
 
-## Deterministic Random Functions
-
 Generate deterministic random values based on seed and input coordinates:
 
 ### Basic Random Values
@@ -163,8 +159,6 @@ success32 := noise.Roll32(seed, 0.3, x) // 30% chance
 success64 := noise.Roll64(seed, 0.75, x) // 75% chance
 ```
 
-
-## Sparse Point Generation
 
 The package provides Simple Sequential Inhibition (SSI) algorithms for generating well-spaced point distributions. These are ideal for procedural placement, sampling, and avoiding clustering artifacts.
 
