@@ -47,10 +47,10 @@ func TestSparse(t *testing.T) {
 			actual := tt.generate()
 
 			// Save the generated image for reference
-			outFile, err := os.Create("out_" + tt.name + ".png")
+			/*outFile, err := os.Create("out_" + tt.name + ".png")
 			assert.NoError(t, err)
 			defer outFile.Close()
-			png.Encode(outFile, actual.(image.Image))
+			png.Encode(outFile, actual.(image.Image))*/
 
 			// Load reference from fixtures
 			refFile, err := os.Open(tt.fixture)

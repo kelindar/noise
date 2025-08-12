@@ -9,8 +9,8 @@ import (
 
 // Shared SSI constants
 const (
-	ssiCellSize       = float32(0.5) // half the min distance (1.0)
-	ssiNeighborRadius = 2            // covers 1.0 at 0.5 cell size
+	ssiCell   = float32(0.5) // half the min distance (1.0)
+	ssiRadius = 2            // covers 1.0 at 0.5 cell size
 )
 
 // coordToIndex packs 2D grid coords into a row-major 1D index
@@ -18,7 +18,7 @@ func coordToIndex(gx, gy, w int) uint32 { return uint32(gy*w + gx) }
 
 // grid1 encapsulates a 1D bitmap grid used by SSI1
 type grid1 struct {
-	grid   bitmap.Bitmap
+	bitmap.Bitmap
 	size   int
 	offset int
 }
@@ -27,17 +27,17 @@ func newGrid1(r1 int) grid1 {
 	gridSize := r1*4 + 10
 	var b bitmap.Bitmap
 	b.Grow(uint32(gridSize - 1))
-	return grid1{grid: b, size: gridSize, offset: gridSize / 2}
+	return grid1{Bitmap: b, size: gridSize, offset: gridSize / 2}
 }
 
 func (g *grid1) IsValid(x float32) bool {
-	gx := int(x/ssiCellSize) + g.offset
+	gx := int(x/ssiCell) + g.offset
 	if gx < 0 || gx >= g.size {
 		return false
 	}
-	for dx := -ssiNeighborRadius; dx <= ssiNeighborRadius; dx++ {
+	for dx := -ssiRadius; dx <= ssiRadius; dx++ {
 		idx := gx + dx
-		if idx >= 0 && idx < g.size && g.grid.Contains(uint32(idx)) {
+		if idx >= 0 && idx < g.size && g.Bitmap.Contains(uint32(idx)) {
 			return false
 		}
 	}
@@ -45,17 +45,16 @@ func (g *grid1) IsValid(x float32) bool {
 }
 
 func (g *grid1) Set(x float32) {
-	gx := int(x/ssiCellSize) + g.offset
-	if gx >= 0 && gx < g.size {
-		g.grid.Set(uint32(gx))
+	if gx := int(x/ssiCell) + g.offset; gx >= 0 && gx < g.size {
+		g.Bitmap.Set(uint32(gx))
 	}
 }
 
 // grid2 encapsulates a 2D bitmap grid used by SSI2
 type grid2 struct {
-	grid       bitmap.Bitmap
-	w, h       int
-	offX, offY int
+	bitmap.Bitmap
+	w, h int
+	x, y int
 }
 
 func newGrid2(r1, r2 int) grid2 {
@@ -63,20 +62,20 @@ func newGrid2(r1, r2 int) grid2 {
 	h := r2*4 + 10
 	var b bitmap.Bitmap
 	b.Grow(uint32(w*h - 1))
-	return grid2{grid: b, w: w, h: h, offX: w / 2, offY: h / 2}
+	return grid2{Bitmap: b, w: w, h: h, x: w / 2, y: h / 2}
 }
 
 func (g *grid2) IsValid(x, y float32) bool {
-	gx := int(x/ssiCellSize) + g.offX
-	gy := int(y/ssiCellSize) + g.offY
+	gx := int(x/ssiCell) + g.x
+	gy := int(y/ssiCell) + g.y
 	if gx < 0 || gx >= g.w || gy < 0 || gy >= g.h {
 		return false
 	}
-	for dy := -ssiNeighborRadius; dy <= ssiNeighborRadius; dy++ {
-		for dx := -ssiNeighborRadius; dx <= ssiNeighborRadius; dx++ {
+	for dy := -ssiRadius; dy <= ssiRadius; dy++ {
+		for dx := -ssiRadius; dx <= ssiRadius; dx++ {
 			nx, ny := gx+dx, gy+dy
 			if nx >= 0 && nx < g.w && ny >= 0 && ny < g.h {
-				if g.grid.Contains(coordToIndex(nx, ny, g.w)) {
+				if g.Bitmap.Contains(coordToIndex(nx, ny, g.w)) {
 					return false
 				}
 			}
@@ -86,10 +85,10 @@ func (g *grid2) IsValid(x, y float32) bool {
 }
 
 func (g *grid2) Set(x, y float32) {
-	gx := int(x/ssiCellSize) + g.offX
-	gy := int(y/ssiCellSize) + g.offY
+	gx := int(x/ssiCell) + g.x
+	gy := int(y/ssiCell) + g.y
 	if gx >= 0 && gx < g.w && gy >= 0 && gy < g.h {
-		g.grid.Set(coordToIndex(gx, gy, g.w))
+		g.Bitmap.Set(coordToIndex(gx, gy, g.w))
 	}
 }
 
@@ -195,43 +194,27 @@ func SSI2(seed uint32, r1, r2 int) iter.Seq[[2]float32] {
 		}
 
 		for r := 1; r <= max(r1, r2); r++ {
-			ixMin := max(-r, -r1)
-			ixMax := min(r, r1)
-			iyMin := max(-r+1, -r2)
-			iyMax := min(r-1, r2)
+			ixMin, ixMax := max(-r, -r1), min(r, r1)
+			iyMin, iyMax := max(-r+1, -r2), min(r-1, r2)
 
-			// Top edge (y = -r)
-			if -r >= -r2 && -r <= r2 {
-				for ix := ixMin; ix <= ixMax; ix++ {
-					if tryCell(ix, -r) {
-						return
+			// Horizontal edges (top/bottom)
+			if r <= r2 {
+				for _, y := range []int{-r, r} {
+					for ix := ixMin; ix <= ixMax; ix++ {
+						if tryCell(ix, y) {
+							return
+						}
 					}
 				}
 			}
 
-			// Bottom edge (y = r)
-			if r >= -r2 && r <= r2 {
-				for ix := ixMin; ix <= ixMax; ix++ {
-					if tryCell(ix, r) {
-						return
-					}
-				}
-			}
-
-			// Left edge (x = -r)
-			if -r >= -r1 && -r <= r1 {
-				for iy := iyMin; iy <= iyMax; iy++ {
-					if tryCell(-r, iy) {
-						return
-					}
-				}
-			}
-
-			// Right edge (x = r)
-			if r >= -r1 && r <= r1 {
-				for iy := iyMin; iy <= iyMax; iy++ {
-					if tryCell(r, iy) {
-						return
+			// Vertical edges (left/right)
+			if r <= r1 {
+				for _, x := range []int{-r, r} {
+					for iy := iyMin; iy <= iyMax; iy++ {
+						if tryCell(x, iy) {
+							return
+						}
 					}
 				}
 			}
@@ -263,10 +246,9 @@ func Sparse1(seed uint32, w, gap int) iter.Seq[int] {
 
 		// Radius in cell units so that after scaling and centering we cover [0,w)
 		r1 := int(math.Ceil(float64(w) / float64(2*gap)))
-		c := float32(w) / 2
-		gapF := float32(gap)
+		c, g := float32(w)/2, float32(gap)
 		for x := range SSI1(seed, r1) {
-			ix := int(x*gapF + c) // scale and center, cast like in tests
+			ix := int(x*g + c)
 			if ix < 0 || ix >= w {
 				continue
 			}
@@ -303,13 +285,11 @@ func Sparse2(seed uint32, w, h, gap int) iter.Seq[[2]int] {
 		// Radii in cell units so that after scaling and centering we cover [0,w) x [0,h)
 		r1 := int(math.Ceil(float64(w) / float64(2*gap)))
 		r2 := int(math.Ceil(float64(h) / float64(2*gap)))
-		cx := float32(w) / 2
-		cy := float32(h) / 2
-		gapF := float32(gap)
+		cx, cy, g := float32(w)/2, float32(h)/2, float32(gap)
 
 		for pt := range SSI2(seed, r1, r2) {
-			ix := int(pt[0]*gapF + cx) // scale and center, cast like in tests
-			iy := int(pt[1]*gapF + cy)
+			ix := int(pt[0]*g + cx)
+			iy := int(pt[1]*g + cy)
 			if ix < 0 || ix >= w || iy < 0 || iy >= h {
 				continue
 			}
